@@ -13,7 +13,7 @@ const randInt = (a: number, b: number) => Math.floor(Math.random() * (b - a + 1)
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 function genMath(): Question {
-  const ops = ["+", "-", "×"] as const;
+  const ops = ["+", "-", "×"];
   const op = pick(ops);
   let a = randInt(1, 12), b = randInt(1, 12), correct = 0;
   if (op === "+") correct = a + b;
