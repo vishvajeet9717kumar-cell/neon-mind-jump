@@ -264,11 +264,9 @@ function Game() {
 
       // gates
       for (const g of s.gates) {
-        const correctColor = "#39ff9d";
-        const wrongColor = "#ff3d7f";
-        const topIsCorrect = g.correctSide === "top";
-        const topColor = topIsCorrect ? correctColor : wrongColor;
-        const bottomColor = topIsCorrect ? wrongColor : correctColor;
+        const neutralColor = "#7df9ff";
+        const topColor = neutralColor;
+        const bottomColor = neutralColor;
         const topBoxBottom = g.gapY - GAP / 2;
         const bottomBoxTop = g.gapY + GAP / 2;
 
