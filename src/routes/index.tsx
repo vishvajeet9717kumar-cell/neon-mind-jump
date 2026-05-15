@@ -1051,8 +1051,21 @@ function NavBtn({ theme, label, onClick }: { theme: Theme; label: string; onClic
   );
 }
 
+const MOTIVATIONS = [
+  "Sharp mind. Sharper next run.",
+  "Every run trains your brain.",
+  "You're getting faster.",
+  "One more try — beat your best.",
+  "Focus is a muscle. Keep flexing.",
+  "Almost legendary. Go again.",
+];
+
 function GameOverScreen({ theme, save, score, combo, mode, xpPct, xpNeeded, onRetry, onMenu }: any) {
   const isHigh = score >= (save.highScores as any)[mode];
+  const message = useMemo(
+    () => (isHigh ? "Personal best unlocked!" : MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]),
+    [score, isHigh]
+  );
   return (
     <div
       className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center"
@@ -1062,11 +1075,14 @@ function GameOverScreen({ theme, save, score, combo, mode, xpPct, xpNeeded, onRe
         {isHigh ? "★ NEW BEST" : "Game Over"}
       </h2>
       <div className="text-white">
-        <div className="text-6xl font-black" style={{ textShadow: `0 0 24px ${theme.glow}` }}>
+        <div className="text-6xl font-black animate-[scaleIn_350ms_ease-out]" style={{ textShadow: `0 0 24px ${theme.glow}` }}>
           {score}
         </div>
         <div className="text-xs text-white/50 mt-1">
           Best Combo x{combo} • Earned {score * 5} XP
+        </div>
+        <div className="text-[11px] mt-2 italic" style={{ color: `${theme.primary}cc` }}>
+          {message}
         </div>
       </div>
 
