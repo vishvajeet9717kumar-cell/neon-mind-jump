@@ -135,6 +135,8 @@ type SaveData = {
   streak: number;
   dailyClaimedDate: string;
   dailyChallenge: { date: string; mode: Mode; goal: number; progress: number; claimed: boolean };
+  sfxOn: boolean;
+  musicOn: boolean;
 };
 
 const SAVE_KEY = "flapquiz-save-v2";
@@ -155,6 +157,8 @@ function defaultSave(): SaveData {
     streak: 0,
     dailyClaimedDate: "",
     dailyChallenge: { date: "", mode: "math", goal: 10, progress: 0, claimed: false },
+    sfxOn: true,
+    musicOn: true,
   };
 }
 
@@ -194,25 +198,103 @@ const ACHIEVEMENTS: { id: string; name: string; desc: string; check: (s: SaveDat
 /* ----------------------------- Audio ----------------------------- */
 
 let audioCtx: AudioContext | null = null;
-function beep(freq: number, dur = 0.08, type: OscillatorType = "sine", vol = 0.05) {
+let masterGain: GainNode | null = null;
+let sfxGain: GainNode | null = null;
+let musicGain: GainNode | null = null;
+let musicNodes: { osc1: OscillatorNode; osc2: OscillatorNode; lfo: OscillatorNode; lfoGain: GainNode } | null = null;
+let sfxEnabled = true;
+let musicEnabled = true;
+let musicTargetVol = 0.06;
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 1;
+    masterGain.connect(audioCtx.destination);
+    sfxGain = audioCtx.createGain();
+    sfxGain.gain.value = 1;
+    sfxGain.connect(masterGain);
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = 0;
+    musicGain.connect(masterGain);
+  } catch {}
+  return audioCtx;
+}
+
+function beep(freq: number, dur = 0.08, type: OscillatorType = "sine", vol = 0.18) {
+  if (!sfxEnabled) return;
+  try {
+    const ctx = ensureAudio();
+    if (!ctx || !sfxGain) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
     o.type = type;
     o.frequency.value = freq;
-    g.gain.setValueAtTime(vol, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol, ctx.currentTime + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    o.connect(g); g.connect(sfxGain);
     o.start();
-    o.stop(audioCtx.currentTime + dur);
+    o.stop(ctx.currentTime + dur + 0.02);
   } catch {}
 }
 function chord(freqs: number[], dur = 0.2, type: OscillatorType = "triangle") {
-  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, type, 0.04), i * 40));
+  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, type, 0.16), i * 40));
 }
 function haptic(ms = 10) {
   try { (navigator as any).vibrate?.(ms); } catch {}
+}
+
+function startMusic() {
+  if (!musicEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx || !musicGain || musicNodes) return;
+  if (ctx.state === "suspended") ctx.resume();
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  osc1.type = "sine"; osc2.type = "triangle";
+  osc1.frequency.value = 196; // G3
+  osc2.frequency.value = 261.63; // C4
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.18;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 8;
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc1.frequency);
+  lfoGain.connect(osc2.frequency);
+  osc1.connect(musicGain);
+  osc2.connect(musicGain);
+  osc1.start(); osc2.start(); lfo.start();
+  musicGain.gain.cancelScheduledValues(ctx.currentTime);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
+  musicGain.gain.linearRampToValueAtTime(musicTargetVol, ctx.currentTime + 1.2);
+  musicNodes = { osc1, osc2, lfo, lfoGain };
+}
+function stopMusic() {
+  if (!audioCtx || !musicGain || !musicNodes) return;
+  const t = audioCtx.currentTime;
+  musicGain.gain.cancelScheduledValues(t);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
+  musicGain.gain.linearRampToValueAtTime(0.0001, t + 0.4);
+  const nodes = musicNodes;
+  musicNodes = null;
+  setTimeout(() => { try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.lfo.stop(); } catch {} }, 500);
+}
+function duckMusic(amount = 0.4, ms = 220) {
+  if (!audioCtx || !musicGain || !musicNodes) return;
+  const t = audioCtx.currentTime;
+  musicGain.gain.cancelScheduledValues(t);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
+  musicGain.gain.linearRampToValueAtTime(musicTargetVol * amount, t + 0.05);
+  musicGain.gain.linearRampToValueAtTime(musicTargetVol, t + ms / 1000);
+}
+function setSfxEnabled(v: boolean) { sfxEnabled = v; }
+function setMusicEnabled(v: boolean) {
+  musicEnabled = v;
+  if (!v) stopMusic();
 }
 
 /* ----------------------------- Game Constants ----------------------------- */
@@ -308,6 +390,27 @@ function Game() {
   /* ---- Theme sync to canvas state ---- */
   useEffect(() => { stateRef.current.theme = theme; }, [theme]);
 
+  /* ---- Audio settings sync ---- */
+  useEffect(() => {
+    setSfxEnabled(save.sfxOn);
+    setMusicEnabled(save.musicOn);
+    if (save.musicOn) startMusic(); else stopMusic();
+  }, [save.sfxOn, save.musicOn]);
+
+  /* ---- Pause music on tab/window blur ---- */
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) stopMusic();
+      else if (save.musicOn) startMusic();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("blur", () => stopMusic());
+    window.addEventListener("focus", () => { if (save.musicOn) startMusic(); });
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [save.musicOn]);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
@@ -399,7 +502,7 @@ function Game() {
         color: theme.glow, size: randInt(2, 4),
       });
     }
-    beep(680, 0.05, "square", 0.04);
+    beep(680, 0.05, "square", 0.18);
     haptic(8);
   };
 
@@ -441,7 +544,7 @@ function Game() {
       s.running = false;
       s.shake = 16;
       burst(s.width * 0.28, s.birdY, theme.secondary, 30);
-      beep(180, 0.25, "sawtooth", 0.06);
+      beep(180, 0.32, "sawtooth", 0.28);
       haptic(40);
       const fin = s.score;
       setScore(fin);
@@ -513,8 +616,8 @@ function Game() {
       if (s.score % 5 === 0) s.speed = Math.min(s.speed + 0.22, 5.8);
       burst(bx, s.birdY, theme.primary, 14);
       addFloatText(bonus > 0 ? `+${1 + bonus} x${s.combo}` : `+1`, theme.primary);
-      beep(740 + Math.min(s.combo, 8) * 40, 0.07, "triangle", 0.05);
-      if (s.combo >= 3 && s.combo % 3 === 0) chord([880, 1100, 1320], 0.12);
+      beep(740 + Math.min(s.combo, 8) * 40, 0.08, "triangle", 0.22);
+      if (s.combo >= 3 && s.combo % 3 === 0) { chord([880, 1100, 1320], 0.12); duckMusic(0.35, 280); }
       haptic(6);
     };
 
@@ -596,10 +699,24 @@ function Game() {
         const topBoxBottom = g.gapY - GAP / 2;
         const bottomBoxTop = g.gapY + GAP / 2;
 
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.font = "600 14px ui-sans-serif, system-ui";
+        // Question label sits in a glass pill above the gap so it's never hidden behind the top HUD
+        const qx = g.x + GATE_WIDTH / 2;
+        const qy = Math.max(110, g.gapY - GAP / 2 - 28);
+        ctx.font = "700 15px ui-sans-serif, system-ui";
         ctx.textAlign = "center";
-        ctx.fillText(g.question, g.x + GATE_WIDTH / 2, 32);
+        const qw = Math.max(ctx.measureText(g.question).width + 22, 64);
+        const qh = 24;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        ctx.fill();
+        ctx.strokeStyle = `${s.theme.glow}66`;
+        ctx.lineWidth = 1;
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.textBaseline = "middle";
+        ctx.fillText(g.question, qx, qy + 1);
+        ctx.textBaseline = "alphabetic";
 
         drawAnswerBox(ctx, g.x, topBoxBottom - ANSWER_HEIGHT, GATE_WIDTH, ANSWER_HEIGHT, neutral, g.topAnswer);
         drawAnswerBox(ctx, g.x, bottomBoxTop, GATE_WIDTH, ANSWER_HEIGHT, neutral, g.bottomAnswer);
@@ -644,21 +761,7 @@ function Game() {
         s.flashAlpha *= 0.85;
       }
 
-      // HUD score (large, centered top)
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.font = "800 38px ui-sans-serif, system-ui";
-      ctx.textAlign = "center";
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = s.theme.glow;
-      ctx.fillText(String(s.score), W / 2, 78);
-      ctx.shadowBlur = 0;
-
-      // combo indicator
-      if (s.combo >= 2) {
-        ctx.fillStyle = s.theme.primary;
-        ctx.font = "700 14px ui-sans-serif, system-ui";
-        ctx.fillText(`Combo x${s.combo}`, W / 2, 100);
-      }
+      // (Score + combo are rendered as React HUD overlays, not on canvas, to avoid overlap with question text.)
 
       ctx.restore();
       raf = requestAnimationFrame(loop);
@@ -710,7 +813,17 @@ function Game() {
     const next = { ...save, themeId: id };
     persistSave(next);
     setSave(next);
-    beep(880, 0.05, "triangle", 0.04);
+    beep(880, 0.06, "triangle", 0.18);
+  };
+
+  const toggleSfx = () => {
+    const next = { ...save, sfxOn: !save.sfxOn };
+    persistSave(next); setSave(next);
+    if (next.sfxOn) beep(880, 0.06, "triangle", 0.18);
+  };
+  const toggleMusic = () => {
+    const next = { ...save, musicOn: !save.musicOn };
+    persistSave(next); setSave(next);
   };
 
   const xpNeeded = xpForLevel(save.level);
@@ -737,7 +850,7 @@ function Game() {
 
         {/* In-game floating texts */}
         {screen === "play" && (
-          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-32">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             {floatTexts.map(f => (
               <div
                 key={f.id}
@@ -750,32 +863,34 @@ function Game() {
           </div>
         )}
 
-        {/* Top HUD bar in play */}
+        {/* Compact top HUD bar in play (slim, never overlaps the question pill which sits ~110px down) */}
         {screen === "play" && (
           <>
-            <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none z-30">
-              <div className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white/80">
+            <div className="absolute top-2 left-2 right-2 flex items-center justify-between text-[11px] pointer-events-none z-30">
+              <div className="px-2 py-0.5 rounded-full bg-black/55 backdrop-blur border border-white/10 text-white/75 font-semibold">
                 Lv {save.level}
               </div>
               <div
-                className="px-3 py-1 rounded-full bg-black/55 backdrop-blur border text-white font-black text-base tabular-nums"
-                style={{ borderColor: `${theme.primary}55`, boxShadow: `0 0 14px ${theme.primary}33` }}
+                className="px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur border text-white font-black text-sm tabular-nums leading-tight"
+                style={{ borderColor: `${theme.primary}55`, boxShadow: `0 0 10px ${theme.primary}33` }}
               >
                 {score}
               </div>
-              <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
-                ◎ {save.coins}
+              <div className="px-2 py-0.5 rounded-full bg-black/45 backdrop-blur border border-white/10 text-white/75 font-semibold">
+                🔥 {save.streak}
               </div>
             </div>
+            {/* Combo popup floats near the bottom so it never covers the question pill */}
             {combo >= 2 && (
               <div
                 key={combo}
-                className="absolute top-12 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-black pointer-events-none animate-[scaleIn_220ms_ease-out] z-30"
+                className="absolute bottom-20 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-black pointer-events-none animate-[comboPop_260ms_ease-out] z-30 whitespace-nowrap"
                 style={{
                   background: `${theme.secondary}22`,
                   color: theme.secondary,
                   border: `1px solid ${theme.secondary}66`,
                   textShadow: `0 0 10px ${theme.secondary}`,
+                  boxShadow: `0 0 18px ${theme.secondary}33`,
                 }}
               >
                 🔥 COMBO x{combo}
@@ -799,6 +914,8 @@ function Game() {
             onOpenThemes={() => setScreen("themes")}
             onOpenMissions={() => setScreen("missions")}
             onOpenProgress={() => setScreen("progress")}
+            onToggleSfx={toggleSfx}
+            onToggleMusic={toggleMusic}
           />
         )}
 
@@ -903,6 +1020,11 @@ function Game() {
           50%      { box-shadow: 0 0 24px 2px var(--pulse, rgba(255,255,255,0.35)); }
         }
         .pulse-glow { animation: softPulse 2.8s ease-in-out infinite; }
+        @keyframes comboPop {
+          0%   { transform: translate(-50%, 12px) scale(0.7); opacity: 0; }
+          60%  { transform: translate(-50%, -2px) scale(1.08); opacity: 1; }
+          100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
       `}</style>
     </div>
   );
@@ -929,6 +1051,7 @@ function GlassCard({
 function MenuScreen({
   theme, save, xpPct, xpNeeded, dailyClaimed, challengeReady,
   onStart, onClaimDaily, onClaimChallenge, onOpenThemes, onOpenMissions, onOpenProgress,
+  onToggleSfx, onToggleMusic,
 }: any) {
   const particles = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({
@@ -971,9 +1094,27 @@ function MenuScreen({
           </h1>
           <p className="text-xs text-white/40 mt-0.5">Train your brain. Beat your best.</p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-          <span className="text-xs text-white/70">◎</span>
-          <span className="text-sm font-bold text-white">{save.coins}</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleMusic?.(); }}
+            aria-label={save.musicOn ? "Mute music" : "Enable music"}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10 bg-white/5 active:scale-90 transition"
+            style={{ color: save.musicOn ? theme.primary : "rgba(255,255,255,0.4)" }}
+          >
+            {save.musicOn ? "♪" : "♪̸"}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleSfx?.(); }}
+            aria-label={save.sfxOn ? "Mute sound effects" : "Enable sound effects"}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10 bg-white/5 active:scale-90 transition"
+            style={{ color: save.sfxOn ? theme.primary : "rgba(255,255,255,0.4)" }}
+          >
+            {save.sfxOn ? "🔊" : "🔇"}
+          </button>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+            <span className="text-xs text-white/70">◎</span>
+            <span className="text-sm font-bold text-white">{save.coins}</span>
+          </div>
         </div>
       </div>
 
