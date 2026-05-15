@@ -819,7 +819,7 @@ function Game() {
 
         {/* In-game floating texts */}
         {screen === "play" && (
-          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-32">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             {floatTexts.map(f => (
               <div
                 key={f.id}
