@@ -832,32 +832,34 @@ function Game() {
           </div>
         )}
 
-        {/* Top HUD bar in play */}
+        {/* Compact top HUD bar in play (slim, never overlaps the question pill which sits ~110px down) */}
         {screen === "play" && (
           <>
-            <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none z-30">
-              <div className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white/80">
+            <div className="absolute top-2 left-2 right-2 flex items-center justify-between text-[11px] pointer-events-none z-30">
+              <div className="px-2 py-0.5 rounded-full bg-black/55 backdrop-blur border border-white/10 text-white/75 font-semibold">
                 Lv {save.level}
               </div>
               <div
-                className="px-3 py-1 rounded-full bg-black/55 backdrop-blur border text-white font-black text-base tabular-nums"
-                style={{ borderColor: `${theme.primary}55`, boxShadow: `0 0 14px ${theme.primary}33` }}
+                className="px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur border text-white font-black text-sm tabular-nums leading-tight"
+                style={{ borderColor: `${theme.primary}55`, boxShadow: `0 0 10px ${theme.primary}33` }}
               >
                 {score}
               </div>
-              <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
-                ◎ {save.coins}
+              <div className="px-2 py-0.5 rounded-full bg-black/45 backdrop-blur border border-white/10 text-white/75 font-semibold">
+                🔥 {save.streak}
               </div>
             </div>
+            {/* Combo popup floats near the bottom so it never covers the question pill */}
             {combo >= 2 && (
               <div
                 key={combo}
-                className="absolute top-12 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-black pointer-events-none animate-[scaleIn_220ms_ease-out] z-30"
+                className="absolute bottom-20 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-black pointer-events-none animate-[comboPop_260ms_ease-out] z-30 whitespace-nowrap"
                 style={{
                   background: `${theme.secondary}22`,
                   color: theme.secondary,
                   border: `1px solid ${theme.secondary}66`,
                   textShadow: `0 0 10px ${theme.secondary}`,
+                  boxShadow: `0 0 18px ${theme.secondary}33`,
                 }}
               >
                 🔥 COMBO x{combo}
