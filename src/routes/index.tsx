@@ -319,6 +319,13 @@ interface Particle {
   life: number; maxLife: number; color: string; size: number;
 }
 
+interface Ring {
+  x: number; y: number; r: number; maxR: number;
+  life: number; maxLife: number; color: string; width: number;
+}
+
+interface BgOrb { x: number; y: number; r: number; vy: number; phase: number; }
+
 /* ----------------------------- Component ----------------------------- */
 
 function Game() {
