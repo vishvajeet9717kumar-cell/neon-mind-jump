@@ -1599,21 +1599,34 @@ function drawAnswerBox(
   x: number, y: number, w: number, h: number,
   color: string, label: string,
 ) {
-  ctx.shadowBlur = 16;
+  // soft gradient fill
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, color + "33");
+  g.addColorStop(1, color + "11");
+  ctx.shadowBlur = 18;
   ctx.shadowColor = color;
   ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.fillStyle = color + "22";
-  roundRect(ctx, x, y, w, h, 12);
+  ctx.lineWidth = 2.2;
+  ctx.fillStyle = g;
+  roundRect(ctx, x, y, w, h, 14);
   ctx.fill();
   ctx.stroke();
   ctx.shadowBlur = 0;
 
+  // inner highlight
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + 2, y + 2, w - 4, h - 4, 12);
+  ctx.stroke();
+
   ctx.fillStyle = "#ffffff";
-  ctx.font = "700 20px ui-sans-serif, system-ui";
+  ctx.font = "800 22px ui-sans-serif, system-ui";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
   ctx.fillText(label, x + w / 2, y + h / 2);
+  ctx.shadowBlur = 0;
   ctx.textBaseline = "alphabetic";
 }
 
