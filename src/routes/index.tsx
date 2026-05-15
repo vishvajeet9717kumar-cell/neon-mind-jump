@@ -562,8 +562,9 @@ function Game() {
     const gameOver = () => {
       const s = stateRef.current;
       s.running = false;
-      s.shake = 16;
-      burst(s.width * 0.28, s.birdY, theme.secondary, 30);
+      s.shake = 18;
+      burst(s.width * 0.28, s.birdY, theme.secondary, 36);
+      s.rings.push({ x: s.width * 0.28, y: s.birdY, r: 8, maxR: 90, life: 0, maxLife: 32, color: theme.secondary, width: 3 });
       beep(180, 0.32, "sawtooth", 0.28);
       haptic(40);
       const fin = s.score;
