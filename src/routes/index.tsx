@@ -1089,9 +1089,27 @@ function MenuScreen({
           </h1>
           <p className="text-xs text-white/40 mt-0.5">Train your brain. Beat your best.</p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-          <span className="text-xs text-white/70">◎</span>
-          <span className="text-sm font-bold text-white">{save.coins}</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleMusic?.(); }}
+            aria-label={save.musicOn ? "Mute music" : "Enable music"}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10 bg-white/5 active:scale-90 transition"
+            style={{ color: save.musicOn ? theme.primary : "rgba(255,255,255,0.4)" }}
+          >
+            {save.musicOn ? "♪" : "♪̸"}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleSfx?.(); }}
+            aria-label={save.sfxOn ? "Mute sound effects" : "Enable sound effects"}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10 bg-white/5 active:scale-90 transition"
+            style={{ color: save.sfxOn ? theme.primary : "rgba(255,255,255,0.4)" }}
+          >
+            {save.sfxOn ? "🔊" : "🔇"}
+          </button>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+            <span className="text-xs text-white/70">◎</span>
+            <span className="text-sm font-bold text-white">{save.coins}</span>
+          </div>
         </div>
       </div>
 
