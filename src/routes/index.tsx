@@ -631,11 +631,22 @@ function Game() {
       s.score += bonus;
       setScore(s.score);
       setCombo(s.combo);
-      s.flashAlpha = 0.18;
+      s.flashAlpha = Math.min(0.35, 0.16 + s.combo * 0.02);
       s.flashColor = theme.primary;
       // speed scales with score AND combo
       if (s.score % 5 === 0) s.speed = Math.min(s.speed + 0.22, 5.8);
-      burst(bx, s.birdY, theme.primary, 14);
+      // hit ring + particles (more particles on higher combo, capped)
+      const pCount = 14 + Math.min(s.combo, 8) * 2;
+      burst(bx, s.birdY, s.combo >= 5 ? theme.secondary : theme.primary, pCount);
+      s.rings.push({
+        x: bx, y: s.birdY,
+        r: BIRD_R + 2, maxR: 38 + Math.min(s.combo, 10) * 3,
+        life: 0, maxLife: 22,
+        color: s.combo >= 5 ? theme.secondary : theme.primary,
+        width: 2.5,
+      });
+      // tiny screen shake on combo milestones
+      if (s.combo >= 3 && s.combo % 3 === 0) s.shake = Math.max(s.shake, 4);
       addFloatText(bonus > 0 ? `+${1 + bonus} x${s.combo}` : `+1`, theme.primary);
       beep(740 + Math.min(s.combo, 8) * 40, 0.08, "triangle", 0.22);
       if (s.combo >= 3 && s.combo % 3 === 0) { chord([880, 1100, 1320], 0.12); duckMusic(0.35, 280); }
