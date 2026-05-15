@@ -889,9 +889,9 @@ function MenuScreen({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white">
-            Flap<span style={{ color: theme.primary }}>Quiz</span>
+            MindRush<span style={{ color: theme.primary }}> IQ</span>
           </h1>
-          <p className="text-xs text-white/40 mt-0.5">Tap to fly. Pick smart.</p>
+          <p className="text-xs text-white/40 mt-0.5">Train your brain. Beat your best.</p>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
           <span className="text-xs text-white/70">◎</span>
