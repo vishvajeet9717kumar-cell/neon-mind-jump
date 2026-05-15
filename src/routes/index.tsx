@@ -476,6 +476,15 @@ function Game() {
     s.birdRot = 0;
     s.gates = [];
     s.particles = [];
+    s.rings = [];
+    s.trail = [];
+    s.bgOrbs = Array.from({ length: 10 }, () => ({
+      x: Math.random() * s.width,
+      y: Math.random() * s.height,
+      r: 30 + Math.random() * 70,
+      vy: 0.05 + Math.random() * 0.15,
+      phase: Math.random() * Math.PI * 2,
+    }));
     s.speed = 2.4 + Math.min(save.level - 1, 5) * 0.1;
     s.score = 0;
     s.combo = 0;
