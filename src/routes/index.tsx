@@ -914,6 +914,8 @@ function Game() {
             onOpenThemes={() => setScreen("themes")}
             onOpenMissions={() => setScreen("missions")}
             onOpenProgress={() => setScreen("progress")}
+            onToggleSfx={toggleSfx}
+            onToggleMusic={toggleMusic}
           />
         )}
 
