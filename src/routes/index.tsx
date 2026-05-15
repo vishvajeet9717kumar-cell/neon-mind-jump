@@ -695,6 +695,30 @@ function Game() {
       }
       s.particles = s.particles.filter(p => p.life < p.maxLife);
 
+      // rings (expanding)
+      for (const r of s.rings) {
+        r.life += 1;
+        const t = r.life / r.maxLife;
+        r.r = r.r + (r.maxR - r.r) * 0.18 * (1 - t * 0.5);
+      }
+      s.rings = s.rings.filter(r => r.life < r.maxLife);
+
+      // bird trail
+      if (s.running) {
+        const bxT = s.width * 0.28;
+        s.trail.push({ x: bxT, y: s.birdY, a: 1 });
+        if (s.trail.length > 10) s.trail.shift();
+      }
+      for (const tr of s.trail) tr.a *= 0.86;
+
+      // background orbs drift
+      s.t += 1;
+      for (const o of s.bgOrbs) {
+        o.y -= o.vy;
+        o.phase += 0.012;
+        if (o.y < -o.r) { o.y = s.height + o.r; o.x = Math.random() * s.width; }
+      }
+
       // shake
       let sx = 0, sy = 0;
       if (s.shake > 0) {
@@ -714,6 +738,20 @@ function Game() {
       grad.addColorStop(1, s.theme.bg);
       ctx.fillStyle = grad;
       ctx.fillRect(-20, -20, W + 40, H + 40);
+
+      // ambient neon orbs (soft glow blobs)
+      for (const o of s.bgOrbs) {
+        const wob = Math.sin(o.phase) * 0.15 + 0.85;
+        const rg = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        rg.addColorStop(0, `${s.theme.glow}22`);
+        rg.addColorStop(1, `${s.theme.glow}00`);
+        ctx.fillStyle = rg;
+        ctx.globalAlpha = 0.55 * wob;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
 
       // grid
       ctx.strokeStyle = "rgba(255,255,255,0.03)";
