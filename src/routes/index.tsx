@@ -157,6 +157,8 @@ function defaultSave(): SaveData {
     streak: 0,
     dailyClaimedDate: "",
     dailyChallenge: { date: "", mode: "math", goal: 10, progress: 0, claimed: false },
+    sfxOn: true,
+    musicOn: true,
   };
 }
 
