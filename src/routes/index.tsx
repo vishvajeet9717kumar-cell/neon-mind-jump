@@ -1010,6 +1010,9 @@ function MenuScreen({
         <NavBtn theme={theme} label="Missions" onClick={onOpenMissions} />
         <NavBtn theme={theme} label="Stats" onClick={onOpenProgress} />
       </div>
+      <div className="mt-3 text-center text-[10px] text-white/35">
+        © {new Date().getFullYear()} MindRush IQ · Tap the <span className="text-white/60">i</span> for Privacy, Terms & Contact
+      </div>
     </div>
   );
 }
