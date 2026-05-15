@@ -390,6 +390,27 @@ function Game() {
   /* ---- Theme sync to canvas state ---- */
   useEffect(() => { stateRef.current.theme = theme; }, [theme]);
 
+  /* ---- Audio settings sync ---- */
+  useEffect(() => {
+    setSfxEnabled(save.sfxOn);
+    setMusicEnabled(save.musicOn);
+    if (save.musicOn) startMusic(); else stopMusic();
+  }, [save.sfxOn, save.musicOn]);
+
+  /* ---- Pause music on tab/window blur ---- */
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) stopMusic();
+      else if (save.musicOn) startMusic();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("blur", () => stopMusic());
+    window.addEventListener("focus", () => { if (save.musicOn) startMusic(); });
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [save.musicOn]);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
