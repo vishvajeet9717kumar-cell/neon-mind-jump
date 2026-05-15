@@ -839,6 +839,22 @@ function Game() {
             {toast}
           </div>
         )}
+
+        {/* Info button (visible outside gameplay) */}
+        {screen !== "play" && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setInfoTab("about"); }}
+            aria-label="About & legal"
+            className="absolute top-3 right-3 z-40 w-9 h-9 rounded-full flex items-center justify-center text-white/80 border border-white/10 bg-black/40 backdrop-blur active:scale-95 transition"
+          >
+            <span className="text-sm font-bold">i</span>
+          </button>
+        )}
+
+        {/* Info / Legal Modal */}
+        {infoTab && (
+          <InfoModal theme={theme} tab={infoTab} setTab={setInfoTab} onClose={() => setInfoTab(null)} />
+        )}
       </div>
 
       <style>{`
