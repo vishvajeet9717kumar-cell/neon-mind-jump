@@ -1020,6 +1020,11 @@ function Game() {
           50%      { box-shadow: 0 0 24px 2px var(--pulse, rgba(255,255,255,0.35)); }
         }
         .pulse-glow { animation: softPulse 2.8s ease-in-out infinite; }
+        @keyframes comboPop {
+          0%   { transform: translate(-50%, 12px) scale(0.7); opacity: 0; }
+          60%  { transform: translate(-50%, -2px) scale(1.08); opacity: 1; }
+          100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
       `}</style>
     </div>
   );
