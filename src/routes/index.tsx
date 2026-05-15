@@ -1038,14 +1038,15 @@ function MenuScreen({
           { id: "math", label: "Math", desc: "Solve equations", icon: "∑" },
           { id: "vocab", label: "Vocabulary", desc: "Match meanings", icon: "Aa" },
           { id: "pattern", label: "Patterns", desc: "Find the next", icon: "◐" },
-        ] as { id: Mode; label: string; desc: string; icon: string }[]).map((m) => (
+        ] as { id: Mode; label: string; desc: string; icon: string }[]).map((m, idx) => (
           <button
             key={m.id}
             onClick={(e) => { e.stopPropagation(); onStart(m.id); }}
-            className="group w-full px-4 py-3.5 rounded-2xl border text-left flex items-center gap-3 transition active:scale-[0.98]"
+            className={`group relative w-full px-4 py-3.5 rounded-2xl border text-left flex items-center gap-3 transition active:scale-[0.98] hover:-translate-y-0.5 ${idx === 0 ? "pulse-glow" : ""}`}
             style={{
-              background: `linear-gradient(135deg, ${theme.glow}12, ${theme.primary}08)`,
-              borderColor: `${theme.glow}33`,
+              background: `linear-gradient(135deg, ${theme.glow}14, ${theme.primary}0a)`,
+              borderColor: `${theme.glow}3a`,
+              ...(idx === 0 ? ({ ["--pulse" as any]: `${theme.primary}55` } as React.CSSProperties) : {}),
             }}
           >
             <div
