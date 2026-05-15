@@ -198,25 +198,103 @@ const ACHIEVEMENTS: { id: string; name: string; desc: string; check: (s: SaveDat
 /* ----------------------------- Audio ----------------------------- */
 
 let audioCtx: AudioContext | null = null;
-function beep(freq: number, dur = 0.08, type: OscillatorType = "sine", vol = 0.05) {
+let masterGain: GainNode | null = null;
+let sfxGain: GainNode | null = null;
+let musicGain: GainNode | null = null;
+let musicNodes: { osc1: OscillatorNode; osc2: OscillatorNode; lfo: OscillatorNode; lfoGain: GainNode } | null = null;
+let sfxEnabled = true;
+let musicEnabled = true;
+let musicTargetVol = 0.06;
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 1;
+    masterGain.connect(audioCtx.destination);
+    sfxGain = audioCtx.createGain();
+    sfxGain.gain.value = 1;
+    sfxGain.connect(masterGain);
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = 0;
+    musicGain.connect(masterGain);
+  } catch {}
+  return audioCtx;
+}
+
+function beep(freq: number, dur = 0.08, type: OscillatorType = "sine", vol = 0.18) {
+  if (!sfxEnabled) return;
+  try {
+    const ctx = ensureAudio();
+    if (!ctx || !sfxGain) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
     o.type = type;
     o.frequency.value = freq;
-    g.gain.setValueAtTime(vol, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol, ctx.currentTime + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    o.connect(g); g.connect(sfxGain);
     o.start();
-    o.stop(audioCtx.currentTime + dur);
+    o.stop(ctx.currentTime + dur + 0.02);
   } catch {}
 }
 function chord(freqs: number[], dur = 0.2, type: OscillatorType = "triangle") {
-  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, type, 0.04), i * 40));
+  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, type, 0.16), i * 40));
 }
 function haptic(ms = 10) {
   try { (navigator as any).vibrate?.(ms); } catch {}
+}
+
+function startMusic() {
+  if (!musicEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx || !musicGain || musicNodes) return;
+  if (ctx.state === "suspended") ctx.resume();
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  osc1.type = "sine"; osc2.type = "triangle";
+  osc1.frequency.value = 196; // G3
+  osc2.frequency.value = 261.63; // C4
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.18;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 8;
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc1.frequency);
+  lfoGain.connect(osc2.frequency);
+  osc1.connect(musicGain);
+  osc2.connect(musicGain);
+  osc1.start(); osc2.start(); lfo.start();
+  musicGain.gain.cancelScheduledValues(ctx.currentTime);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
+  musicGain.gain.linearRampToValueAtTime(musicTargetVol, ctx.currentTime + 1.2);
+  musicNodes = { osc1, osc2, lfo, lfoGain };
+}
+function stopMusic() {
+  if (!audioCtx || !musicGain || !musicNodes) return;
+  const t = audioCtx.currentTime;
+  musicGain.gain.cancelScheduledValues(t);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
+  musicGain.gain.linearRampToValueAtTime(0.0001, t + 0.4);
+  const nodes = musicNodes;
+  musicNodes = null;
+  setTimeout(() => { try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.lfo.stop(); } catch {} }, 500);
+}
+function duckMusic(amount = 0.4, ms = 220) {
+  if (!audioCtx || !musicGain || !musicNodes) return;
+  const t = audioCtx.currentTime;
+  musicGain.gain.cancelScheduledValues(t);
+  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
+  musicGain.gain.linearRampToValueAtTime(musicTargetVol * amount, t + 0.05);
+  musicGain.gain.linearRampToValueAtTime(musicTargetVol, t + ms / 1000);
+}
+function setSfxEnabled(v: boolean) { sfxEnabled = v; }
+function setMusicEnabled(v: boolean) {
+  musicEnabled = v;
+  if (!v) stopMusic();
 }
 
 /* ----------------------------- Game Constants ----------------------------- */
