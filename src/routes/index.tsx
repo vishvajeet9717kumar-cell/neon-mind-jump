@@ -481,7 +481,7 @@ function Game() {
         color: theme.glow, size: randInt(2, 4),
       });
     }
-    beep(680, 0.05, "square", 0.04);
+    beep(680, 0.05, "square", 0.18);
     haptic(8);
   };
 
@@ -523,7 +523,7 @@ function Game() {
       s.running = false;
       s.shake = 16;
       burst(s.width * 0.28, s.birdY, theme.secondary, 30);
-      beep(180, 0.25, "sawtooth", 0.06);
+      beep(180, 0.32, "sawtooth", 0.28);
       haptic(40);
       const fin = s.score;
       setScore(fin);
@@ -595,7 +595,7 @@ function Game() {
       if (s.score % 5 === 0) s.speed = Math.min(s.speed + 0.22, 5.8);
       burst(bx, s.birdY, theme.primary, 14);
       addFloatText(bonus > 0 ? `+${1 + bonus} x${s.combo}` : `+1`, theme.primary);
-      beep(740 + Math.min(s.combo, 8) * 40, 0.07, "triangle", 0.05);
+      beep(740 + Math.min(s.combo, 8) * 40, 0.08, "triangle", 0.22);
       if (s.combo >= 3 && s.combo % 3 === 0) chord([880, 1100, 1320], 0.12);
       haptic(6);
     };
@@ -792,7 +792,7 @@ function Game() {
     const next = { ...save, themeId: id };
     persistSave(next);
     setSave(next);
-    beep(880, 0.05, "triangle", 0.04);
+    beep(880, 0.06, "triangle", 0.18);
   };
 
   const xpNeeded = xpForLevel(save.level);
