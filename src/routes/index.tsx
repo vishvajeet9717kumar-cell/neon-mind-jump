@@ -771,19 +771,23 @@ function Game() {
 
         // Question label sits in a glass pill above the gap so it's never hidden behind the top HUD
         const qx = g.x + GATE_WIDTH / 2;
-        const qy = Math.max(110, g.gapY - GAP / 2 - 28);
-        ctx.font = "700 15px ui-sans-serif, system-ui";
+        const qy = Math.max(116, g.gapY - GAP / 2 - 32);
+        ctx.font = "800 17px ui-sans-serif, system-ui";
         ctx.textAlign = "center";
-        const qw = Math.max(ctx.measureText(g.question).width + 22, 64);
-        const qh = 24;
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        const qw = Math.max(ctx.measureText(g.question).width + 28, 72);
+        const qh = 30;
+        // outer soft glow
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = `${s.theme.glow}99`;
+        ctx.fillStyle = "rgba(0,0,0,0.62)";
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 14);
         ctx.fill();
-        ctx.strokeStyle = `${s.theme.glow}66`;
-        ctx.lineWidth = 1;
-        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = `${s.theme.glow}88`;
+        ctx.lineWidth = 1.2;
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 14);
         ctx.stroke();
-        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.fillStyle = "#ffffff";
         ctx.textBaseline = "middle";
         ctx.fillText(g.question, qx, qy + 1);
         ctx.textBaseline = "alphabetic";
@@ -803,12 +807,50 @@ function Game() {
       }
       ctx.globalAlpha = 1;
 
-      // bird
+      // expanding rings
+      for (const r of s.rings) {
+        const t = r.life / r.maxLife;
+        ctx.globalAlpha = 1 - t;
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = r.width * (1 - t * 0.6);
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = r.color;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+
+      // bird trail
       const bx = W * 0.28;
+      for (let i = 0; i < s.trail.length; i++) {
+        const tr = s.trail[i];
+        const k = (i + 1) / s.trail.length;
+        ctx.globalAlpha = tr.a * 0.45 * k;
+        ctx.fillStyle = s.theme.glow;
+        ctx.beginPath();
+        ctx.arc(tr.x - (s.trail.length - i) * 1.5, tr.y, BIRD_R * (0.4 + 0.6 * k), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // bird
       ctx.save();
       ctx.translate(bx, s.birdY);
       ctx.rotate(s.birdRot);
-      ctx.shadowBlur = 22;
+      // combo aura ring (no extra alloc, light)
+      if (s.combo >= 5) {
+        const pulse = 1 + Math.sin(s.t * 0.25) * 0.12;
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = s.theme.secondary;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, BIRD_R * 1.7 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.shadowBlur = 26;
       ctx.shadowColor = s.theme.glow;
       ctx.fillStyle = s.theme.accent;
       ctx.beginPath();
