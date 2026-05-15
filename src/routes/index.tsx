@@ -740,21 +740,7 @@ function Game() {
         s.flashAlpha *= 0.85;
       }
 
-      // HUD score (large, centered top)
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.font = "800 38px ui-sans-serif, system-ui";
-      ctx.textAlign = "center";
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = s.theme.glow;
-      ctx.fillText(String(s.score), W / 2, 78);
-      ctx.shadowBlur = 0;
-
-      // combo indicator
-      if (s.combo >= 2) {
-        ctx.fillStyle = s.theme.primary;
-        ctx.font = "700 14px ui-sans-serif, system-ui";
-        ctx.fillText(`Combo x${s.combo}`, W / 2, 100);
-      }
+      // (Score + combo are rendered as React HUD overlays, not on canvas, to avoid overlap with question text.)
 
       ctx.restore();
       raf = requestAnimationFrame(loop);
