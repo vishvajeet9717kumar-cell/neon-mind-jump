@@ -752,14 +752,36 @@ function Game() {
 
         {/* Top HUD bar in play */}
         {screen === "play" && (
-          <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none">
-            <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
-              Lv {save.level}
+          <>
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none z-30">
+              <div className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white/80">
+                Lv {save.level}
+              </div>
+              <div
+                className="px-3 py-1 rounded-full bg-black/55 backdrop-blur border text-white font-black text-base tabular-nums"
+                style={{ borderColor: `${theme.primary}55`, boxShadow: `0 0 14px ${theme.primary}33` }}
+              >
+                {score}
+              </div>
+              <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
+                ◎ {save.coins}
+              </div>
             </div>
-            <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
-              ◎ {save.coins}
-            </div>
-          </div>
+            {combo >= 2 && (
+              <div
+                key={combo}
+                className="absolute top-12 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-black pointer-events-none animate-[scaleIn_220ms_ease-out] z-30"
+                style={{
+                  background: `${theme.secondary}22`,
+                  color: theme.secondary,
+                  border: `1px solid ${theme.secondary}66`,
+                  textShadow: `0 0 10px ${theme.secondary}`,
+                }}
+              >
+                🔥 COMBO x{combo}
+              </div>
+            )}
+          </>
         )}
 
         {/* MENU */}
