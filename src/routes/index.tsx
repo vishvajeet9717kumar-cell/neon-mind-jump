@@ -350,6 +350,9 @@ function Game() {
     birdY: 0, birdVy: 0, birdRot: 0,
     gates: [] as Gate[],
     particles: [] as Particle[],
+    rings: [] as Ring[],
+    trail: [] as { x: number; y: number; a: number }[],
+    bgOrbs: [] as BgOrb[],
     speed: 2.4,
     width: 360, height: 640,
     running: false,
@@ -362,6 +365,7 @@ function Game() {
     shake: 0,
     theme: THEMES[0],
     level: 1,
+    t: 0,
   });
 
   /* ---- Init save + daily streak ---- */
