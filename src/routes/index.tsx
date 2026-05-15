@@ -752,14 +752,36 @@ function Game() {
 
         {/* Top HUD bar in play */}
         {screen === "play" && (
-          <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none">
-            <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
-              Lv {save.level}
+          <>
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs pointer-events-none z-30">
+              <div className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white/80">
+                Lv {save.level}
+              </div>
+              <div
+                className="px-3 py-1 rounded-full bg-black/55 backdrop-blur border text-white font-black text-base tabular-nums"
+                style={{ borderColor: `${theme.primary}55`, boxShadow: `0 0 14px ${theme.primary}33` }}
+              >
+                {score}
+              </div>
+              <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
+                ◎ {save.coins}
+              </div>
             </div>
-            <div className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-white/80">
-              ◎ {save.coins}
-            </div>
-          </div>
+            {combo >= 2 && (
+              <div
+                key={combo}
+                className="absolute top-12 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-black pointer-events-none animate-[scaleIn_220ms_ease-out] z-30"
+                style={{
+                  background: `${theme.secondary}22`,
+                  color: theme.secondary,
+                  border: `1px solid ${theme.secondary}66`,
+                  textShadow: `0 0 10px ${theme.secondary}`,
+                }}
+              >
+                🔥 COMBO x{combo}
+              </div>
+            )}
+          </>
         )}
 
         {/* MENU */}
@@ -870,6 +892,17 @@ function Game() {
           0% { transform: scale(0.92); opacity: 0; }
           100% { transform: scale(1); opacity: 1; }
         }
+        @keyframes ambientRise {
+          0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+          15%  { opacity: 0.6; }
+          85%  { opacity: 0.4; }
+          100% { transform: translate3d(0, -110%, 0); opacity: 0; }
+        }
+        @keyframes softPulse {
+          0%, 100% { box-shadow: 0 0 0 0 var(--pulse, rgba(255,255,255,0)); }
+          50%      { box-shadow: 0 0 24px 2px var(--pulse, rgba(255,255,255,0.35)); }
+        }
+        .pulse-glow { animation: softPulse 2.8s ease-in-out infinite; }
       `}</style>
     </div>
   );
@@ -897,13 +930,41 @@ function MenuScreen({
   theme, save, xpPct, xpNeeded, dailyClaimed, challengeReady,
   onStart, onClaimDaily, onClaimChallenge, onOpenThemes, onOpenMissions, onOpenProgress,
 }: any) {
+  const particles = useMemo(
+    () => Array.from({ length: 14 }, (_, i) => ({
+      left: (i * 73 + 11) % 100,
+      delay: (i * 0.7) % 8,
+      duration: 9 + ((i * 1.3) % 7),
+      size: 2 + (i % 3),
+    })),
+    []
+  );
   return (
     <div
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
+      {/* Ambient particles */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {particles.map((p, i) => (
+          <span
+            key={i}
+            className="absolute bottom-0 rounded-full"
+            style={{
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size,
+              background: theme.glow,
+              boxShadow: `0 0 8px ${theme.glow}`,
+              opacity: 0.5,
+              animation: `ambientRise ${p.duration}s linear ${p.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="relative flex items-center justify-between mb-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white">
             MindRush<span style={{ color: theme.primary }}> IQ</span>
@@ -977,14 +1038,15 @@ function MenuScreen({
           { id: "math", label: "Math", desc: "Solve equations", icon: "∑" },
           { id: "vocab", label: "Vocabulary", desc: "Match meanings", icon: "Aa" },
           { id: "pattern", label: "Patterns", desc: "Find the next", icon: "◐" },
-        ] as { id: Mode; label: string; desc: string; icon: string }[]).map((m) => (
+        ] as { id: Mode; label: string; desc: string; icon: string }[]).map((m, idx) => (
           <button
             key={m.id}
             onClick={(e) => { e.stopPropagation(); onStart(m.id); }}
-            className="group w-full px-4 py-3.5 rounded-2xl border text-left flex items-center gap-3 transition active:scale-[0.98]"
+            className={`group relative w-full px-4 py-3.5 rounded-2xl border text-left flex items-center gap-3 transition active:scale-[0.98] hover:-translate-y-0.5 ${idx === 0 ? "pulse-glow" : ""}`}
             style={{
-              background: `linear-gradient(135deg, ${theme.glow}12, ${theme.primary}08)`,
-              borderColor: `${theme.glow}33`,
+              background: `linear-gradient(135deg, ${theme.glow}14, ${theme.primary}0a)`,
+              borderColor: `${theme.glow}3a`,
+              ...(idx === 0 ? ({ ["--pulse" as any]: `${theme.primary}55` } as React.CSSProperties) : {}),
             }}
           >
             <div
@@ -1029,8 +1091,21 @@ function NavBtn({ theme, label, onClick }: { theme: Theme; label: string; onClic
   );
 }
 
+const MOTIVATIONS = [
+  "Sharp mind. Sharper next run.",
+  "Every run trains your brain.",
+  "You're getting faster.",
+  "One more try — beat your best.",
+  "Focus is a muscle. Keep flexing.",
+  "Almost legendary. Go again.",
+];
+
 function GameOverScreen({ theme, save, score, combo, mode, xpPct, xpNeeded, onRetry, onMenu }: any) {
   const isHigh = score >= (save.highScores as any)[mode];
+  const message = useMemo(
+    () => (isHigh ? "Personal best unlocked!" : MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]),
+    [score, isHigh]
+  );
   return (
     <div
       className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center"
@@ -1040,11 +1115,14 @@ function GameOverScreen({ theme, save, score, combo, mode, xpPct, xpNeeded, onRe
         {isHigh ? "★ NEW BEST" : "Game Over"}
       </h2>
       <div className="text-white">
-        <div className="text-6xl font-black" style={{ textShadow: `0 0 24px ${theme.glow}` }}>
+        <div className="text-6xl font-black animate-[scaleIn_350ms_ease-out]" style={{ textShadow: `0 0 24px ${theme.glow}` }}>
           {score}
         </div>
         <div className="text-xs text-white/50 mt-1">
           Best Combo x{combo} • Earned {score * 5} XP
+        </div>
+        <div className="text-[11px] mt-2 italic" style={{ color: `${theme.primary}cc` }}>
+          {message}
         </div>
       </div>
 
