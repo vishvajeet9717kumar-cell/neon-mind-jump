@@ -1292,3 +1292,153 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
+
+/* ----------------------------- Info / Legal Modal ----------------------------- */
+
+type InfoTab = "about" | "privacy" | "terms" | "contact";
+
+const SUPPORT_EMAIL = "vishvajeet9717kumar@gmail.com";
+
+function InfoModal({
+  theme, tab, setTab, onClose,
+}: {
+  theme: Theme;
+  tab: InfoTab;
+  setTab: (t: InfoTab) => void;
+  onClose: () => void;
+}) {
+  const tabs: { id: InfoTab; label: string }[] = [
+    { id: "about", label: "About" },
+    { id: "privacy", label: "Privacy" },
+    { id: "terms", label: "Terms" },
+    { id: "contact", label: "Contact" },
+  ];
+  return (
+    <div
+      className="absolute inset-0 z-[60] flex items-end sm:items-center justify-center p-3"
+      style={{ background: "rgba(0,0,0,0.65)", animation: "fadeSlide 200ms ease-out" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[400px] rounded-2xl border overflow-hidden flex flex-col"
+        style={{
+          background: theme.bgInner,
+          borderColor: `${theme.glow}33`,
+          boxShadow: `0 20px 60px ${theme.glow}33`,
+          maxHeight: "85%",
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div className="text-white font-black tracking-tight">
+            MindRush<span style={{ color: theme.primary }}> IQ</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white/70 border border-white/10 bg-white/5 active:scale-95 transition"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 px-3 pt-3">
+          {tabs.map(t => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className="flex-1 py-2 rounded-xl text-[11px] font-bold transition border"
+                style={{
+                  background: active ? `${theme.primary}22` : "rgba(255,255,255,0.03)",
+                  borderColor: active ? `${theme.primary}66` : "rgba(255,255,255,0.08)",
+                  color: active ? theme.primary : "rgba(255,255,255,0.6)",
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-4 overflow-y-auto text-white/75 text-[13px] leading-relaxed">
+          {tab === "about" && (
+            <div className="space-y-2">
+              <h3 className="text-white font-bold text-base">About MindRush IQ</h3>
+              <p>MindRush IQ is a fast, modern brain-training game designed to make daily mental practice fun and rewarding.</p>
+              <p>Train and improve:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-white/70">
+                <li>Focus & attention</li>
+                <li>Working memory</li>
+                <li>Pattern recognition</li>
+                <li>Thinking speed</li>
+                <li>Problem-solving skills</li>
+              </ul>
+              <p className="text-white/55 text-xs pt-2">Designed to be safe, simple, and parent-friendly for players of all ages.</p>
+            </div>
+          )}
+
+          {tab === "privacy" && (
+            <div className="space-y-2">
+              <h3 className="text-white font-bold text-base">Privacy Policy</h3>
+              <p>MindRush IQ may collect:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-white/70">
+                <li>Device information</li>
+                <li>Browser type</li>
+                <li>Gameplay analytics</li>
+                <li>Crash & performance data</li>
+                <li>Ad interaction data</li>
+              </ul>
+              <p>This data may be used to improve gameplay, fix bugs, strengthen security, analyze performance, and display ads.</p>
+              <p>We may use third-party services such as Google AdSense, Google AdMob, and Firebase Analytics.</p>
+              <p className="text-white/60 text-xs">Contact: <span className="text-white">{SUPPORT_EMAIL}</span></p>
+            </div>
+          )}
+
+          {tab === "terms" && (
+            <div className="space-y-2">
+              <h3 className="text-white font-bold text-base">Terms & Conditions</h3>
+              <p>By playing MindRush IQ, you agree not to:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-white/70">
+                <li>Copy or resell the game</li>
+                <li>Reverse engineer any systems</li>
+                <li>Use hacks, cheats, or bots</li>
+                <li>Abuse bugs or exploits</li>
+              </ul>
+              <p>The game may contain advertisements and reward-based ads. We may update or modify the game at any time without prior notice.</p>
+              <p className="text-white/60 text-xs">Contact: <span className="text-white">{SUPPORT_EMAIL}</span></p>
+            </div>
+          )}
+
+          {tab === "contact" && (
+            <div className="space-y-2">
+              <h3 className="text-white font-bold text-base">Contact Us</h3>
+              <p>Need help, have feedback, or want to report a bug?</p>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="inline-block mt-1 px-3 py-2 rounded-xl text-sm font-bold"
+                style={{
+                  background: `${theme.primary}22`,
+                  color: theme.primary,
+                  border: `1px solid ${theme.primary}55`,
+                }}
+              >
+                ✉ {SUPPORT_EMAIL}
+              </a>
+              <p className="text-white/55 text-xs pt-2">Typical response time: 24–72 hours.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-white/5 text-center text-[10px] text-white/40">
+          © {new Date().getFullYear()} MindRush IQ — All rights reserved.
+        </div>
+      </div>
+    </div>
+  );
+}
