@@ -892,6 +892,17 @@ function Game() {
           0% { transform: scale(0.92); opacity: 0; }
           100% { transform: scale(1); opacity: 1; }
         }
+        @keyframes ambientRise {
+          0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+          15%  { opacity: 0.6; }
+          85%  { opacity: 0.4; }
+          100% { transform: translate3d(0, -110%, 0); opacity: 0; }
+        }
+        @keyframes softPulse {
+          0%, 100% { box-shadow: 0 0 0 0 var(--pulse, rgba(255,255,255,0)); }
+          50%      { box-shadow: 0 0 24px 2px var(--pulse, rgba(255,255,255,0.35)); }
+        }
+        .pulse-glow { animation: softPulse 2.8s ease-in-out infinite; }
       `}</style>
     </div>
   );
