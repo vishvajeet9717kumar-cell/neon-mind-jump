@@ -816,6 +816,16 @@ function Game() {
     beep(880, 0.06, "triangle", 0.18);
   };
 
+  const toggleSfx = () => {
+    const next = { ...save, sfxOn: !save.sfxOn };
+    persistSave(next); setSave(next);
+    if (next.sfxOn) beep(880, 0.06, "triangle", 0.18);
+  };
+  const toggleMusic = () => {
+    const next = { ...save, musicOn: !save.musicOn };
+    persistSave(next); setSave(next);
+  };
+
   const xpNeeded = xpForLevel(save.level);
   const xpPct = Math.min(100, (save.xp / xpNeeded) * 100);
   const dailyClaimed = save.dailyClaimedDate === todayStr();
