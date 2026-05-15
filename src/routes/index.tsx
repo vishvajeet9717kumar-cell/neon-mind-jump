@@ -930,13 +930,41 @@ function MenuScreen({
   theme, save, xpPct, xpNeeded, dailyClaimed, challengeReady,
   onStart, onClaimDaily, onClaimChallenge, onOpenThemes, onOpenMissions, onOpenProgress,
 }: any) {
+  const particles = useMemo(
+    () => Array.from({ length: 14 }, (_, i) => ({
+      left: (i * 73 + 11) % 100,
+      delay: (i * 0.7) % 8,
+      duration: 9 + ((i * 1.3) % 7),
+      size: 2 + (i % 3),
+    })),
+    []
+  );
   return (
     <div
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
+      {/* Ambient particles */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {particles.map((p, i) => (
+          <span
+            key={i}
+            className="absolute bottom-0 rounded-full"
+            style={{
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size,
+              background: theme.glow,
+              boxShadow: `0 0 8px ${theme.glow}`,
+              opacity: 0.5,
+              animation: `ambientRise ${p.duration}s linear ${p.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="relative flex items-center justify-between mb-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white">
             MindRush<span style={{ color: theme.primary }}> IQ</span>
