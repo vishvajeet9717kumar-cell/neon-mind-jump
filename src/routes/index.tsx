@@ -678,10 +678,24 @@ function Game() {
         const topBoxBottom = g.gapY - GAP / 2;
         const bottomBoxTop = g.gapY + GAP / 2;
 
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.font = "600 14px ui-sans-serif, system-ui";
+        // Question label sits in a glass pill above the gap so it's never hidden behind the top HUD
+        const qx = g.x + GATE_WIDTH / 2;
+        const qy = Math.max(110, g.gapY - GAP / 2 - 28);
+        ctx.font = "700 15px ui-sans-serif, system-ui";
         ctx.textAlign = "center";
-        ctx.fillText(g.question, g.x + GATE_WIDTH / 2, 32);
+        const qw = Math.max(ctx.measureText(g.question).width + 22, 64);
+        const qh = 24;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        ctx.fill();
+        ctx.strokeStyle = `${s.theme.glow}66`;
+        ctx.lineWidth = 1;
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.textBaseline = "middle";
+        ctx.fillText(g.question, qx, qy + 1);
+        ctx.textBaseline = "alphabetic";
 
         drawAnswerBox(ctx, g.x, topBoxBottom - ANSWER_HEIGHT, GATE_WIDTH, ANSWER_HEIGHT, neutral, g.topAnswer);
         drawAnswerBox(ctx, g.x, bottomBoxTop, GATE_WIDTH, ANSWER_HEIGHT, neutral, g.bottomAnswer);
