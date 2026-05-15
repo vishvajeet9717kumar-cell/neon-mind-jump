@@ -248,6 +248,7 @@ function Game() {
   const [save, setSave] = useState<SaveData>(defaultSave());
   const [toast, setToast] = useState<string | null>(null);
   const [floatTexts, setFloatTexts] = useState<{ id: number; text: string; color: string }[]>([]);
+  const [infoTab, setInfoTab] = useState<null | "about" | "privacy" | "terms" | "contact">(null);
   const floatId = useRef(0);
 
   const theme = useMemo(
