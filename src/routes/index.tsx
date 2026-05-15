@@ -1046,6 +1046,7 @@ function GlassCard({
 function MenuScreen({
   theme, save, xpPct, xpNeeded, dailyClaimed, challengeReady,
   onStart, onClaimDaily, onClaimChallenge, onOpenThemes, onOpenMissions, onOpenProgress,
+  onToggleSfx, onToggleMusic,
 }: any) {
   const particles = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({
