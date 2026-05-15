@@ -596,7 +596,7 @@ function Game() {
       burst(bx, s.birdY, theme.primary, 14);
       addFloatText(bonus > 0 ? `+${1 + bonus} x${s.combo}` : `+1`, theme.primary);
       beep(740 + Math.min(s.combo, 8) * 40, 0.08, "triangle", 0.22);
-      if (s.combo >= 3 && s.combo % 3 === 0) chord([880, 1100, 1320], 0.12);
+      if (s.combo >= 3 && s.combo % 3 === 0) { chord([880, 1100, 1320], 0.12); duckMusic(0.35, 280); }
       haptic(6);
     };
 
