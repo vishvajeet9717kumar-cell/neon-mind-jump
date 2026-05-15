@@ -135,6 +135,8 @@ type SaveData = {
   streak: number;
   dailyClaimedDate: string;
   dailyChallenge: { date: string; mode: Mode; goal: number; progress: number; claimed: boolean };
+  sfxOn: boolean;
+  musicOn: boolean;
 };
 
 const SAVE_KEY = "flapquiz-save-v2";
