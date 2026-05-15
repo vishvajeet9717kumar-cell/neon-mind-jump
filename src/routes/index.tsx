@@ -319,6 +319,13 @@ interface Particle {
   life: number; maxLife: number; color: string; size: number;
 }
 
+interface Ring {
+  x: number; y: number; r: number; maxR: number;
+  life: number; maxLife: number; color: string; width: number;
+}
+
+interface BgOrb { x: number; y: number; r: number; vy: number; phase: number; }
+
 /* ----------------------------- Component ----------------------------- */
 
 function Game() {
@@ -343,6 +350,9 @@ function Game() {
     birdY: 0, birdVy: 0, birdRot: 0,
     gates: [] as Gate[],
     particles: [] as Particle[],
+    rings: [] as Ring[],
+    trail: [] as { x: number; y: number; a: number }[],
+    bgOrbs: [] as BgOrb[],
     speed: 2.4,
     width: 360, height: 640,
     running: false,
@@ -355,6 +365,7 @@ function Game() {
     shake: 0,
     theme: THEMES[0],
     level: 1,
+    t: 0,
   });
 
   /* ---- Init save + daily streak ---- */
@@ -465,6 +476,15 @@ function Game() {
     s.birdRot = 0;
     s.gates = [];
     s.particles = [];
+    s.rings = [];
+    s.trail = [];
+    s.bgOrbs = Array.from({ length: 10 }, () => ({
+      x: Math.random() * s.width,
+      y: Math.random() * s.height,
+      r: 30 + Math.random() * 70,
+      vy: 0.05 + Math.random() * 0.15,
+      phase: Math.random() * Math.PI * 2,
+    }));
     s.speed = 2.4 + Math.min(save.level - 1, 5) * 0.1;
     s.score = 0;
     s.combo = 0;
@@ -542,8 +562,9 @@ function Game() {
     const gameOver = () => {
       const s = stateRef.current;
       s.running = false;
-      s.shake = 16;
-      burst(s.width * 0.28, s.birdY, theme.secondary, 30);
+      s.shake = 18;
+      burst(s.width * 0.28, s.birdY, theme.secondary, 36);
+      s.rings.push({ x: s.width * 0.28, y: s.birdY, r: 8, maxR: 90, life: 0, maxLife: 32, color: theme.secondary, width: 3 });
       beep(180, 0.32, "sawtooth", 0.28);
       haptic(40);
       const fin = s.score;
@@ -610,11 +631,22 @@ function Game() {
       s.score += bonus;
       setScore(s.score);
       setCombo(s.combo);
-      s.flashAlpha = 0.18;
+      s.flashAlpha = Math.min(0.35, 0.16 + s.combo * 0.02);
       s.flashColor = theme.primary;
       // speed scales with score AND combo
       if (s.score % 5 === 0) s.speed = Math.min(s.speed + 0.22, 5.8);
-      burst(bx, s.birdY, theme.primary, 14);
+      // hit ring + particles (more particles on higher combo, capped)
+      const pCount = 14 + Math.min(s.combo, 8) * 2;
+      burst(bx, s.birdY, s.combo >= 5 ? theme.secondary : theme.primary, pCount);
+      s.rings.push({
+        x: bx, y: s.birdY,
+        r: BIRD_R + 2, maxR: 38 + Math.min(s.combo, 10) * 3,
+        life: 0, maxLife: 22,
+        color: s.combo >= 5 ? theme.secondary : theme.primary,
+        width: 2.5,
+      });
+      // tiny screen shake on combo milestones
+      if (s.combo >= 3 && s.combo % 3 === 0) s.shake = Math.max(s.shake, 4);
       addFloatText(bonus > 0 ? `+${1 + bonus} x${s.combo}` : `+1`, theme.primary);
       beep(740 + Math.min(s.combo, 8) * 40, 0.08, "triangle", 0.22);
       if (s.combo >= 3 && s.combo % 3 === 0) { chord([880, 1100, 1320], 0.12); duckMusic(0.35, 280); }
@@ -663,6 +695,30 @@ function Game() {
       }
       s.particles = s.particles.filter(p => p.life < p.maxLife);
 
+      // rings (expanding)
+      for (const r of s.rings) {
+        r.life += 1;
+        const t = r.life / r.maxLife;
+        r.r = r.r + (r.maxR - r.r) * 0.18 * (1 - t * 0.5);
+      }
+      s.rings = s.rings.filter(r => r.life < r.maxLife);
+
+      // bird trail
+      if (s.running) {
+        const bxT = s.width * 0.28;
+        s.trail.push({ x: bxT, y: s.birdY, a: 1 });
+        if (s.trail.length > 10) s.trail.shift();
+      }
+      for (const tr of s.trail) tr.a *= 0.86;
+
+      // background orbs drift
+      s.t += 1;
+      for (const o of s.bgOrbs) {
+        o.y -= o.vy;
+        o.phase += 0.012;
+        if (o.y < -o.r) { o.y = s.height + o.r; o.x = Math.random() * s.width; }
+      }
+
       // shake
       let sx = 0, sy = 0;
       if (s.shake > 0) {
@@ -683,6 +739,20 @@ function Game() {
       ctx.fillStyle = grad;
       ctx.fillRect(-20, -20, W + 40, H + 40);
 
+      // ambient neon orbs (soft glow blobs)
+      for (const o of s.bgOrbs) {
+        const wob = Math.sin(o.phase) * 0.15 + 0.85;
+        const rg = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        rg.addColorStop(0, `${s.theme.glow}22`);
+        rg.addColorStop(1, `${s.theme.glow}00`);
+        ctx.fillStyle = rg;
+        ctx.globalAlpha = 0.55 * wob;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
       // grid
       ctx.strokeStyle = "rgba(255,255,255,0.03)";
       ctx.lineWidth = 1;
@@ -701,19 +771,23 @@ function Game() {
 
         // Question label sits in a glass pill above the gap so it's never hidden behind the top HUD
         const qx = g.x + GATE_WIDTH / 2;
-        const qy = Math.max(110, g.gapY - GAP / 2 - 28);
-        ctx.font = "700 15px ui-sans-serif, system-ui";
+        const qy = Math.max(116, g.gapY - GAP / 2 - 32);
+        ctx.font = "800 17px ui-sans-serif, system-ui";
         ctx.textAlign = "center";
-        const qw = Math.max(ctx.measureText(g.question).width + 22, 64);
-        const qh = 24;
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        const qw = Math.max(ctx.measureText(g.question).width + 28, 72);
+        const qh = 30;
+        // outer soft glow
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = `${s.theme.glow}99`;
+        ctx.fillStyle = "rgba(0,0,0,0.62)";
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 14);
         ctx.fill();
-        ctx.strokeStyle = `${s.theme.glow}66`;
-        ctx.lineWidth = 1;
-        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 12);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = `${s.theme.glow}88`;
+        ctx.lineWidth = 1.2;
+        roundRect(ctx, qx - qw / 2, qy - qh / 2, qw, qh, 14);
         ctx.stroke();
-        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.fillStyle = "#ffffff";
         ctx.textBaseline = "middle";
         ctx.fillText(g.question, qx, qy + 1);
         ctx.textBaseline = "alphabetic";
@@ -733,12 +807,50 @@ function Game() {
       }
       ctx.globalAlpha = 1;
 
-      // bird
+      // expanding rings
+      for (const r of s.rings) {
+        const t = r.life / r.maxLife;
+        ctx.globalAlpha = 1 - t;
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = r.width * (1 - t * 0.6);
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = r.color;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+
+      // bird trail
       const bx = W * 0.28;
+      for (let i = 0; i < s.trail.length; i++) {
+        const tr = s.trail[i];
+        const k = (i + 1) / s.trail.length;
+        ctx.globalAlpha = tr.a * 0.45 * k;
+        ctx.fillStyle = s.theme.glow;
+        ctx.beginPath();
+        ctx.arc(tr.x - (s.trail.length - i) * 1.5, tr.y, BIRD_R * (0.4 + 0.6 * k), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // bird
       ctx.save();
       ctx.translate(bx, s.birdY);
       ctx.rotate(s.birdRot);
-      ctx.shadowBlur = 22;
+      // combo aura ring (no extra alloc, light)
+      if (s.combo >= 5) {
+        const pulse = 1 + Math.sin(s.t * 0.25) * 0.12;
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = s.theme.secondary;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, BIRD_R * 1.7 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.shadowBlur = 26;
       ctx.shadowColor = s.theme.glow;
       ctx.fillStyle = s.theme.accent;
       ctx.beginPath();
@@ -1487,21 +1599,34 @@ function drawAnswerBox(
   x: number, y: number, w: number, h: number,
   color: string, label: string,
 ) {
-  ctx.shadowBlur = 16;
+  // soft gradient fill
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, color + "33");
+  g.addColorStop(1, color + "11");
+  ctx.shadowBlur = 18;
   ctx.shadowColor = color;
   ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.fillStyle = color + "22";
-  roundRect(ctx, x, y, w, h, 12);
+  ctx.lineWidth = 2.2;
+  ctx.fillStyle = g;
+  roundRect(ctx, x, y, w, h, 14);
   ctx.fill();
   ctx.stroke();
   ctx.shadowBlur = 0;
 
+  // inner highlight
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + 2, y + 2, w - 4, h - 4, 12);
+  ctx.stroke();
+
   ctx.fillStyle = "#ffffff";
-  ctx.font = "700 20px ui-sans-serif, system-ui";
+  ctx.font = "800 22px ui-sans-serif, system-ui";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
   ctx.fillText(label, x + w / 2, y + h / 2);
+  ctx.shadowBlur = 0;
   ctx.textBaseline = "alphabetic";
 }
 
