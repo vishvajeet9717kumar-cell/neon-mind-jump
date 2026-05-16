@@ -514,7 +514,7 @@ function Game() {
   const flap = () => {
     const s = stateRef.current;
     if (!s.running) return;
-    s.birdVy = -5.8;
+    s.birdVy = FLAP_VY;
     s.birdRot = -0.4;
     // flap particles
     for (let i = 0; i < 4; i++) {
