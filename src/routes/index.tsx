@@ -406,8 +406,9 @@ function Game() {
   useEffect(() => {
     setSfxEnabled(save.sfxOn);
     setMusicEnabled(save.musicOn);
+    setMusicVolume(save.musicVolume ?? 0.5);
     if (save.musicOn) startMusic(); else stopMusic();
-  }, [save.sfxOn, save.musicOn]);
+  }, [save.sfxOn, save.musicOn, save.musicVolume]);
 
   /* ---- Pause music on tab/window blur ---- */
   useEffect(() => {
