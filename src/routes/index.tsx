@@ -1172,14 +1172,15 @@ function Game() {
           </div>
         )}
 
-        {/* Info button (visible outside gameplay) */}
+        {/* Info button (visible outside gameplay) - placed bottom-left so it never overlaps the header HUD */}
         {screen !== "play" && (
           <button
             onClick={(e) => { e.stopPropagation(); setInfoTab("about"); }}
             aria-label="About & legal"
-            className="absolute top-3 right-3 z-40 w-9 h-9 rounded-full flex items-center justify-center text-white/80 border border-white/10 bg-black/40 backdrop-blur active:scale-95 transition"
+            className="fixed bottom-4 left-4 z-40 w-10 h-10 rounded-full flex items-center justify-center text-white/80 border border-white/10 bg-black/60 backdrop-blur active:scale-95 transition shadow-lg"
+            style={{ boxShadow: `0 0 16px ${theme.primary}33` }}
           >
-            <span className="text-sm font-bold">i</span>
+            <span className="text-sm font-bold italic">i</span>
           </button>
         )}
 
