@@ -1302,10 +1302,10 @@ function MenuScreen({
           </h1>
           <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 mt-1 font-semibold">Train · React · Conquer</p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 relative">
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleMusic?.(); }}
-            aria-label={save.musicOn ? "Mute music" : "Enable music"}
+            onClick={(e) => { e.stopPropagation(); setShowVol((v: boolean) => !v); }}
+            aria-label="Music settings"
             className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10 bg-white/5 active:scale-90 transition"
             style={{ color: save.musicOn ? theme.primary : "rgba(255,255,255,0.4)" }}
           >
@@ -1323,6 +1323,37 @@ function MenuScreen({
             <span className="text-xs text-white/70">◎</span>
             <span className="text-sm font-bold text-white">{save.coins}</span>
           </div>
+          {showVol && (
+            <div
+              className="absolute right-0 top-10 z-50 w-56 p-3 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl animate-[fadeSlide_180ms_ease-out]"
+              style={{ background: "rgba(10,10,20,0.92)", boxShadow: `0 0 30px ${theme.primary}33` }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Music</span>
+                <button
+                  onClick={() => onToggleMusic?.()}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/15"
+                  style={{ color: save.musicOn ? theme.primary : "rgba(255,255,255,0.5)" }}
+                >
+                  {save.musicOn ? "ON" : "OFF"}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/50">🔈</span>
+                <input
+                  type="range" min={0} max={1} step={0.01}
+                  value={save.musicVolume ?? 0.5}
+                  onChange={(e) => onChangeMusicVolume?.(parseFloat(e.target.value))}
+                  className="flex-1 accent-current"
+                  style={{ accentColor: theme.primary }}
+                  disabled={!save.musicOn}
+                />
+                <span className="text-xs text-white/50">🔊</span>
+              </div>
+              <div className="text-[10px] text-white/40 mt-1 text-right">{Math.round((save.musicVolume ?? 0.5) * 100)}%</div>
+            </div>
+          )}
         </div>
       </div>
 
