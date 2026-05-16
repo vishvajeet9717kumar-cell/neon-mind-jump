@@ -1589,19 +1589,23 @@ function ProgressScreen({ theme, save, xpPct, xpNeeded, onBack }: any) {
   );
 }
 
-function Header({ theme, title, onBack }: { theme: Theme; title: string; onBack: () => void }) {
+function Header({ theme, title, onBack, coins }: { theme: Theme; title: string; onBack: () => void; coins?: number }) {
   return (
     <div className="flex items-center gap-3 mb-2">
       <button
         onClick={(e) => { e.stopPropagation(); onBack(); }}
+        aria-label="Back"
         className="w-9 h-9 rounded-full flex items-center justify-center text-white border border-white/10 bg-white/5 active:scale-95 transition"
       >
         ←
       </button>
       <h2 className="text-xl font-black text-white">{title}</h2>
-      <div className="ml-auto text-xs text-white/50">
-        ◎ <span className="text-white font-bold">0</span>
-      </div>
+      {typeof coins === "number" && (
+        <div className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs">
+          <span className="text-white/60">◎</span>
+          <span className="text-white font-bold tabular-nums">{coins}</span>
+        </div>
+      )}
     </div>
   );
 }
