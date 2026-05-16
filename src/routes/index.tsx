@@ -1438,7 +1438,7 @@ function ThemesScreen({ theme, save, onSelect, onBack }: any) {
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Themes" onBack={onBack} />
+      <Header theme={theme} title="Themes" onBack={onBack} coins={save.coins} />
       <div className="flex flex-col gap-2.5 mt-2">
         {THEMES.map(t => {
           const unlocked = save.unlockedThemes.includes(t.id);
@@ -1481,7 +1481,7 @@ function MissionsScreen({ theme, save, onBack }: any) {
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Missions" onBack={onBack} />
+      <Header theme={theme} title="Missions" onBack={onBack} coins={save.coins} />
 
       {/* Daily challenge */}
       <GlassCard theme={theme} className="p-3 mb-3 mt-2">
@@ -1549,7 +1549,7 @@ function ProgressScreen({ theme, save, xpPct, xpNeeded, onBack }: any) {
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Stats" onBack={onBack} />
+      <Header theme={theme} title="Stats" onBack={onBack} coins={save.coins} />
 
       <GlassCard theme={theme} className="p-4 mb-3 mt-2">
         <div className="flex items-end justify-between mb-2">
