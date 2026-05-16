@@ -1125,6 +1125,53 @@ function Game() {
           </div>
         )}
 
+        {/* First-time tutorial */}
+        {screen === "menu" && !save.tutorialSeen && (
+          <div
+            className="absolute inset-0 z-[55] flex items-center justify-center p-5"
+            style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)", animation: "fadeSlide 240ms ease-out" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="w-full max-w-[320px] rounded-3xl p-5 border text-center"
+              style={{
+                background: `linear-gradient(160deg, ${theme.bgInner}, ${theme.bg})`,
+                borderColor: `${theme.primary}55`,
+                boxShadow: `0 20px 60px ${theme.primary}44, 0 0 0 1px ${theme.glow}22 inset`,
+              }}
+            >
+              <div className="text-2xl font-black mb-1" style={{ color: theme.primary, textShadow: `0 0 18px ${theme.primary}` }}>
+                Welcome!
+              </div>
+              <p className="text-[12px] text-white/65 mb-4 leading-relaxed">
+                Tap anywhere to fly. Steer the bird through the box with the <span className="text-white font-bold">correct answer</span>. Wrong box = game over.
+              </p>
+              <div className="grid grid-cols-3 gap-2 mb-4 text-[10px] text-white/70">
+                <div className="rounded-lg p-2 border border-white/10 bg-white/5">
+                  <div className="text-base mb-0.5">👆</div>Tap to flap
+                </div>
+                <div className="rounded-lg p-2 border border-white/10 bg-white/5">
+                  <div className="text-base mb-0.5">🎯</div>Pick the right answer
+                </div>
+                <div className="rounded-lg p-2 border border-white/10 bg-white/5">
+                  <div className="text-base mb-0.5">🔥</div>Chain combos
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); dismissTutorial(); }}
+                className="w-full py-3 rounded-2xl font-black text-sm tracking-wide active:scale-[0.97] transition"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.primary}, ${theme.glow})`,
+                  color: theme.bg,
+                  boxShadow: `0 8px 22px ${theme.primary}66`,
+                }}
+              >
+                LET'S GO
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Info button (visible outside gameplay) */}
         {screen !== "play" && (
           <button
