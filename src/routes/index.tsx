@@ -137,6 +137,7 @@ type SaveData = {
   dailyChallenge: { date: string; mode: Mode; goal: number; progress: number; claimed: boolean };
   sfxOn: boolean;
   musicOn: boolean;
+  musicVolume: number;
   tutorialSeen: boolean;
 };
 
@@ -160,6 +161,7 @@ function defaultSave(): SaveData {
     dailyChallenge: { date: "", mode: "math", goal: 10, progress: 0, claimed: false },
     sfxOn: true,
     musicOn: true,
+    musicVolume: 0.5,
     tutorialSeen: false,
   };
 }
@@ -202,11 +204,11 @@ const ACHIEVEMENTS: { id: string; name: string; desc: string; check: (s: SaveDat
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let sfxGain: GainNode | null = null;
-let musicGain: GainNode | null = null;
-let musicNodes: { osc1: OscillatorNode; osc2: OscillatorNode; lfo: OscillatorNode; lfoGain: GainNode } | null = null;
 let sfxEnabled = true;
 let musicEnabled = true;
-let musicTargetVol = 0.06;
+let musicVolume = 0.5;
+let musicEl: HTMLAudioElement | null = null;
+let musicDuckTimer: number | null = null;
 
 function ensureAudio() {
   if (audioCtx) return audioCtx;
@@ -218,9 +220,6 @@ function ensureAudio() {
     sfxGain = audioCtx.createGain();
     sfxGain.gain.value = 1;
     sfxGain.connect(masterGain);
-    musicGain = audioCtx.createGain();
-    musicGain.gain.value = 0;
-    musicGain.connect(masterGain);
   } catch {}
   return audioCtx;
 }
@@ -250,53 +249,50 @@ function haptic(ms = 10) {
   try { (navigator as any).vibrate?.(ms); } catch {}
 }
 
+function ensureMusicEl() {
+  if (musicEl || typeof window === "undefined") return musicEl;
+  try {
+    const el = new Audio("/music/bg-music.mp3");
+    el.loop = true;
+    el.preload = "auto";
+    el.volume = 0;
+    musicEl = el;
+  } catch {}
+  return musicEl;
+}
+
 function startMusic() {
   if (!musicEnabled) return;
-  const ctx = ensureAudio();
-  if (!ctx || !musicGain || musicNodes) return;
-  if (ctx.state === "suspended") ctx.resume();
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  osc1.type = "sine"; osc2.type = "triangle";
-  osc1.frequency.value = 196; // G3
-  osc2.frequency.value = 261.63; // C4
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 0.18;
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 8;
-  lfo.connect(lfoGain);
-  lfoGain.connect(osc1.frequency);
-  lfoGain.connect(osc2.frequency);
-  osc1.connect(musicGain);
-  osc2.connect(musicGain);
-  osc1.start(); osc2.start(); lfo.start();
-  musicGain.gain.cancelScheduledValues(ctx.currentTime);
-  musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
-  musicGain.gain.linearRampToValueAtTime(musicTargetVol, ctx.currentTime + 1.2);
-  musicNodes = { osc1, osc2, lfo, lfoGain };
+  const el = ensureMusicEl();
+  if (!el) return;
+  el.volume = musicVolume;
+  const p = el.play();
+  if (p && typeof p.catch === "function") p.catch(() => {});
 }
 function stopMusic() {
-  if (!audioCtx || !musicGain || !musicNodes) return;
-  const t = audioCtx.currentTime;
-  musicGain.gain.cancelScheduledValues(t);
-  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(0.0001, t + 0.4);
-  const nodes = musicNodes;
-  musicNodes = null;
-  setTimeout(() => { try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.lfo.stop(); } catch {} }, 500);
+  if (!musicEl) return;
+  try { musicEl.pause(); } catch {}
 }
 function duckMusic(amount = 0.4, ms = 220) {
-  if (!audioCtx || !musicGain || !musicNodes) return;
-  const t = audioCtx.currentTime;
-  musicGain.gain.cancelScheduledValues(t);
-  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(musicTargetVol * amount, t + 0.05);
-  musicGain.gain.linearRampToValueAtTime(musicTargetVol, t + ms / 1000);
+  if (!musicEl || musicEl.paused) return;
+  try {
+    musicEl.volume = Math.max(0, musicVolume * amount);
+    if (musicDuckTimer) window.clearTimeout(musicDuckTimer);
+    musicDuckTimer = window.setTimeout(() => {
+      if (musicEl) musicEl.volume = musicVolume;
+    }, ms);
+  } catch {}
 }
 function setSfxEnabled(v: boolean) { sfxEnabled = v; }
 function setMusicEnabled(v: boolean) {
   musicEnabled = v;
   if (!v) stopMusic();
+}
+function setMusicVolume(v: number) {
+  musicVolume = Math.max(0, Math.min(1, v));
+  if (musicEl && !musicEl.paused) {
+    try { musicEl.volume = musicVolume; } catch {}
+  }
 }
 
 /* ----------------------------- Game Constants ----------------------------- */
@@ -410,8 +406,9 @@ function Game() {
   useEffect(() => {
     setSfxEnabled(save.sfxOn);
     setMusicEnabled(save.musicOn);
+    setMusicVolume(save.musicVolume ?? 0.5);
     if (save.musicOn) startMusic(); else stopMusic();
-  }, [save.sfxOn, save.musicOn]);
+  }, [save.sfxOn, save.musicOn, save.musicVolume]);
 
   /* ---- Pause music on tab/window blur ---- */
   useEffect(() => {
@@ -970,6 +967,10 @@ function Game() {
     const next = { ...save, musicOn: !save.musicOn };
     persistSave(next); setSave(next);
   };
+  const changeMusicVolume = (v: number) => {
+    const next = { ...save, musicVolume: v };
+    persistSave(next); setSave(next);
+  };
 
   const xpNeeded = xpForLevel(save.level);
   const xpPct = Math.min(100, (save.xp / xpNeeded) * 100);
@@ -1061,6 +1062,7 @@ function Game() {
             onOpenProgress={() => setScreen("progress")}
             onToggleSfx={toggleSfx}
             onToggleMusic={toggleMusic}
+            onChangeMusicVolume={changeMusicVolume}
           />
         )}
 
@@ -1172,14 +1174,15 @@ function Game() {
           </div>
         )}
 
-        {/* Info button (visible outside gameplay) */}
+        {/* Info button (visible outside gameplay) - placed bottom-left so it never overlaps the header HUD */}
         {screen !== "play" && (
           <button
             onClick={(e) => { e.stopPropagation(); setInfoTab("about"); }}
             aria-label="About & legal"
-            className="absolute top-3 right-3 z-40 w-9 h-9 rounded-full flex items-center justify-center text-white/80 border border-white/10 bg-black/40 backdrop-blur active:scale-95 transition"
+            className="fixed bottom-4 left-4 z-40 w-10 h-10 rounded-full flex items-center justify-center text-white/80 border border-white/10 bg-black/60 backdrop-blur active:scale-95 transition shadow-lg"
+            style={{ boxShadow: `0 0 16px ${theme.primary}33` }}
           >
-            <span className="text-sm font-bold">i</span>
+            <span className="text-sm font-bold italic">i</span>
           </button>
         )}
 
@@ -1244,8 +1247,9 @@ function GlassCard({
 function MenuScreen({
   theme, save, xpPct, xpNeeded, dailyClaimed, challengeReady,
   onStart, onClaimDaily, onClaimChallenge, onOpenThemes, onOpenMissions, onOpenProgress,
-  onToggleSfx, onToggleMusic,
+  onToggleSfx, onToggleMusic, onChangeMusicVolume,
 }: any) {
+  const [showVol, setShowVol] = useState(false);
   const particles = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({
       left: (i * 73 + 11) % 100,
@@ -1298,10 +1302,10 @@ function MenuScreen({
           </h1>
           <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 mt-1 font-semibold">Train · React · Conquer</p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 relative">
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleMusic?.(); }}
-            aria-label={save.musicOn ? "Mute music" : "Enable music"}
+            onClick={(e) => { e.stopPropagation(); setShowVol((v: boolean) => !v); }}
+            aria-label="Music settings"
             className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-white/10 bg-white/5 active:scale-90 transition"
             style={{ color: save.musicOn ? theme.primary : "rgba(255,255,255,0.4)" }}
           >
@@ -1319,6 +1323,37 @@ function MenuScreen({
             <span className="text-xs text-white/70">◎</span>
             <span className="text-sm font-bold text-white">{save.coins}</span>
           </div>
+          {showVol && (
+            <div
+              className="absolute right-0 top-10 z-50 w-56 p-3 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl animate-[fadeSlide_180ms_ease-out]"
+              style={{ background: "rgba(10,10,20,0.92)", boxShadow: `0 0 30px ${theme.primary}33` }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Music</span>
+                <button
+                  onClick={() => onToggleMusic?.()}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/15"
+                  style={{ color: save.musicOn ? theme.primary : "rgba(255,255,255,0.5)" }}
+                >
+                  {save.musicOn ? "ON" : "OFF"}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/50">🔈</span>
+                <input
+                  type="range" min={0} max={1} step={0.01}
+                  value={save.musicVolume ?? 0.5}
+                  onChange={(e) => onChangeMusicVolume?.(parseFloat(e.target.value))}
+                  className="flex-1 accent-current"
+                  style={{ accentColor: theme.primary }}
+                  disabled={!save.musicOn}
+                />
+                <span className="text-xs text-white/50">🔊</span>
+              </div>
+              <div className="text-[10px] text-white/40 mt-1 text-right">{Math.round((save.musicVolume ?? 0.5) * 100)}%</div>
+            </div>
+          )}
         </div>
       </div>
 
