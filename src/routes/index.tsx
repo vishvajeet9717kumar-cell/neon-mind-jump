@@ -944,6 +944,23 @@ function Game() {
     beep(880, 0.06, "triangle", 0.18);
   };
 
+  const buyTheme = (id: string) => {
+    if (save.unlockedThemes.includes(id)) return;
+    const t = THEMES.find(x => x.id === id);
+    if (!t) return;
+    const cost = t.unlockLevel * 50;
+    if (save.coins < cost) { showToast("Not enough coins"); haptic(12); return; }
+    const next = { ...save, coins: save.coins - cost, unlockedThemes: [...save.unlockedThemes, id], themeId: id };
+    persistSave(next); setSave(next);
+    showToast(`Unlocked ${t.name}!`);
+    chord([659, 880, 1046], 0.16); haptic(18);
+  };
+
+  const dismissTutorial = () => {
+    const next = { ...save, tutorialSeen: true };
+    persistSave(next); setSave(next);
+  };
+
   const toggleSfx = () => {
     const next = { ...save, sfxOn: !save.sfxOn };
     persistSave(next); setSave(next);
