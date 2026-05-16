@@ -137,6 +137,7 @@ type SaveData = {
   dailyChallenge: { date: string; mode: Mode; goal: number; progress: number; claimed: boolean };
   sfxOn: boolean;
   musicOn: boolean;
+  tutorialSeen: boolean;
 };
 
 const SAVE_KEY = "flapquiz-save-v2";
@@ -159,6 +160,7 @@ function defaultSave(): SaveData {
     dailyChallenge: { date: "", mode: "math", goal: 10, progress: 0, claimed: false },
     sfxOn: true,
     musicOn: true,
+    tutorialSeen: false,
   };
 }
 
@@ -299,10 +301,13 @@ function setMusicEnabled(v: boolean) {
 
 /* ----------------------------- Game Constants ----------------------------- */
 
-const GATE_WIDTH = 70;
+const GATE_WIDTH = 88;
 const ANSWER_HEIGHT = 110;
-const GAP = 64;
+const GAP = 72;
 const BIRD_R = 12;
+const GRAVITY = 0.27;
+const FLAP_VY = -5.2;
+const MAX_VY = 8.4;
 
 interface Gate {
   x: number;
@@ -511,7 +516,7 @@ function Game() {
   const flap = () => {
     const s = stateRef.current;
     if (!s.running) return;
-    s.birdVy = -5.8;
+    s.birdVy = FLAP_VY;
     s.birdRot = -0.4;
     // flap particles
     for (let i = 0; i < 4; i++) {
@@ -659,11 +664,22 @@ function Game() {
 
       // physics
       if (s.running) {
-        s.birdVy += 0.34;
-        if (s.birdVy > 9.5) s.birdVy = 9.5;
+        s.birdVy += GRAVITY;
+        if (s.birdVy > MAX_VY) s.birdVy = MAX_VY;
         s.birdY += s.birdVy;
         s.birdRot = Math.max(-0.6, Math.min(1.1, s.birdVy * 0.08));
-        s.gates.forEach((g) => (g.x -= s.speed));
+        // Slow-mo when bird is approaching the next gate (eases reading time)
+        const bxPhys = W * 0.28;
+        let slow = 1;
+        for (const g of s.gates) {
+          if (!g.passed && g.x + GATE_WIDTH > bxPhys - 6) {
+            const dx = g.x - bxPhys;
+            if (dx > 0 && dx < 130) { slow = 0.62 + (dx / 130) * 0.38; }
+            break;
+          }
+        }
+        const moveSpeed = s.speed * slow;
+        s.gates.forEach((g) => (g.x -= moveSpeed));
         if (s.gates.length && s.gates[0].x + GATE_WIDTH < -20) s.gates.shift();
         const last = s.gates[s.gates.length - 1];
         if (last && last.x < W - 280) spawnGate(W + 80);
@@ -928,6 +944,23 @@ function Game() {
     beep(880, 0.06, "triangle", 0.18);
   };
 
+  const buyTheme = (id: string) => {
+    if (save.unlockedThemes.includes(id)) return;
+    const t = THEMES.find(x => x.id === id);
+    if (!t) return;
+    const cost = t.unlockLevel * 50;
+    if (save.coins < cost) { showToast("Not enough coins"); haptic(12); return; }
+    const next = { ...save, coins: save.coins - cost, unlockedThemes: [...save.unlockedThemes, id], themeId: id };
+    persistSave(next); setSave(next);
+    showToast(`Unlocked ${t.name}!`);
+    chord([659, 880, 1046], 0.16); haptic(18);
+  };
+
+  const dismissTutorial = () => {
+    const next = { ...save, tutorialSeen: true };
+    persistSave(next); setSave(next);
+  };
+
   const toggleSfx = () => {
     const next = { ...save, sfxOn: !save.sfxOn };
     persistSave(next); setSave(next);
@@ -1052,6 +1085,7 @@ function Game() {
             theme={theme}
             save={save}
             onSelect={selectTheme}
+            onBuy={buyTheme}
             onBack={() => setScreen("menu")}
           />
         )}
@@ -1088,6 +1122,53 @@ function Game() {
             }}
           >
             {toast}
+          </div>
+        )}
+
+        {/* First-time tutorial */}
+        {screen === "menu" && !save.tutorialSeen && (
+          <div
+            className="absolute inset-0 z-[55] flex items-center justify-center p-5"
+            style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)", animation: "fadeSlide 240ms ease-out" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="w-full max-w-[320px] rounded-3xl p-5 border text-center"
+              style={{
+                background: `linear-gradient(160deg, ${theme.bgInner}, ${theme.bg})`,
+                borderColor: `${theme.primary}55`,
+                boxShadow: `0 20px 60px ${theme.primary}44, 0 0 0 1px ${theme.glow}22 inset`,
+              }}
+            >
+              <div className="text-2xl font-black mb-1" style={{ color: theme.primary, textShadow: `0 0 18px ${theme.primary}` }}>
+                Welcome!
+              </div>
+              <p className="text-[12px] text-white/65 mb-4 leading-relaxed">
+                Tap anywhere to fly. Steer the bird through the box with the <span className="text-white font-bold">correct answer</span>. Wrong box = game over.
+              </p>
+              <div className="grid grid-cols-3 gap-2 mb-4 text-[10px] text-white/70">
+                <div className="rounded-lg p-2 border border-white/10 bg-white/5">
+                  <div className="text-base mb-0.5">👆</div>Tap to flap
+                </div>
+                <div className="rounded-lg p-2 border border-white/10 bg-white/5">
+                  <div className="text-base mb-0.5">🎯</div>Pick the right answer
+                </div>
+                <div className="rounded-lg p-2 border border-white/10 bg-white/5">
+                  <div className="text-base mb-0.5">🔥</div>Chain combos
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); dismissTutorial(); }}
+                className="w-full py-3 rounded-2xl font-black text-sm tracking-wide active:scale-[0.97] transition"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.primary}, ${theme.glow})`,
+                  color: theme.bg,
+                  boxShadow: `0 8px 22px ${theme.primary}66`,
+                }}
+              >
+                LET'S GO
+              </button>
+            </div>
           </div>
         )}
 
@@ -1201,10 +1282,21 @@ function MenuScreen({
       {/* Header */}
       <div className="relative flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">
-            MindRush<span style={{ color: theme.primary }}> IQ</span>
+          <h1
+            className="text-3xl font-black tracking-tight leading-none"
+            style={{
+              background: `linear-gradient(135deg, #ffffff 0%, ${theme.primary} 55%, ${theme.glow} 100%)`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              textShadow: `0 0 24px ${theme.primary}55`,
+              filter: `drop-shadow(0 0 8px ${theme.glow}33)`,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            MindRush<span style={{ WebkitTextStroke: `1px ${theme.secondary}` }}> IQ</span>
           </h1>
-          <p className="text-xs text-white/40 mt-0.5">Train your brain. Beat your best.</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 mt-1 font-semibold">Train · React · Conquer</p>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -1418,23 +1510,24 @@ function GameOverScreen({ theme, save, score, combo, mode, xpPct, xpNeeded, onRe
   );
 }
 
-function ThemesScreen({ theme, save, onSelect, onBack }: any) {
+function ThemesScreen({ theme, save, onSelect, onBuy, onBack }: any) {
   return (
     <div
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Themes" onBack={onBack} />
-      <div className="flex flex-col gap-2.5 mt-2">
+      <Header theme={theme} title="Themes & Shop" onBack={onBack} coins={save.coins} />
+      <p className="text-[11px] text-white/45 mb-3 px-1">Unlock by leveling up — or spend coins to skip the wait.</p>
+      <div className="flex flex-col gap-2.5">
         {THEMES.map(t => {
           const unlocked = save.unlockedThemes.includes(t.id);
           const active = save.themeId === t.id;
+          const cost = t.unlockLevel * 50;
+          const canBuy = !unlocked && save.coins >= cost;
           return (
-            <button
+            <div
               key={t.id}
-              disabled={!unlocked}
-              onClick={(e) => { e.stopPropagation(); onSelect(t.id); }}
-              className="rounded-2xl p-3 flex items-center gap-3 border transition active:scale-[0.98] disabled:opacity-50"
+              className="rounded-2xl p-3 flex items-center gap-3 border transition"
               style={{
                 background: `linear-gradient(135deg, ${t.bgInner}, ${t.bg})`,
                 borderColor: active ? t.primary : `${t.glow}33`,
@@ -1446,14 +1539,39 @@ function ThemesScreen({ theme, save, onSelect, onBack }: any) {
                 <div className="w-6 h-10 rounded" style={{ background: t.glow }} />
                 <div className="w-6 h-10 rounded" style={{ background: t.secondary }} />
               </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-white">{t.name}</div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="font-bold text-white truncate">{t.name}</div>
                 <div className="text-[11px] text-white/50">
                   {unlocked ? (active ? "Active" : "Tap to apply") : `Unlocks at Lv ${t.unlockLevel}`}
                 </div>
               </div>
-              {active && <div className="text-xs font-black" style={{ color: t.primary }}>✓</div>}
-            </button>
+              {unlocked ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (!active) onSelect(t.id); }}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold border active:scale-95 transition"
+                  style={{
+                    background: active ? `${t.primary}22` : "rgba(255,255,255,0.05)",
+                    borderColor: active ? `${t.primary}88` : "rgba(255,255,255,0.1)",
+                    color: active ? t.primary : "#fff",
+                  }}
+                >
+                  {active ? "✓ Active" : "Apply"}
+                </button>
+              ) : (
+                <button
+                  disabled={!canBuy}
+                  onClick={(e) => { e.stopPropagation(); onBuy(t.id); }}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold border active:scale-95 transition disabled:opacity-45 disabled:cursor-not-allowed"
+                  style={{
+                    background: canBuy ? `${t.primary}1f` : "rgba(255,255,255,0.04)",
+                    borderColor: canBuy ? `${t.primary}66` : "rgba(255,255,255,0.1)",
+                    color: canBuy ? t.primary : "rgba(255,255,255,0.6)",
+                  }}
+                >
+                  ◎ {cost}
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
@@ -1467,7 +1585,7 @@ function MissionsScreen({ theme, save, onBack }: any) {
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Missions" onBack={onBack} />
+      <Header theme={theme} title="Missions" onBack={onBack} coins={save.coins} />
 
       {/* Daily challenge */}
       <GlassCard theme={theme} className="p-3 mb-3 mt-2">
@@ -1535,7 +1653,7 @@ function ProgressScreen({ theme, save, xpPct, xpNeeded, onBack }: any) {
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Stats" onBack={onBack} />
+      <Header theme={theme} title="Stats" onBack={onBack} coins={save.coins} />
 
       <GlassCard theme={theme} className="p-4 mb-3 mt-2">
         <div className="flex items-end justify-between mb-2">
@@ -1575,19 +1693,23 @@ function ProgressScreen({ theme, save, xpPct, xpNeeded, onBack }: any) {
   );
 }
 
-function Header({ theme, title, onBack }: { theme: Theme; title: string; onBack: () => void }) {
+function Header({ theme, title, onBack, coins }: { theme: Theme; title: string; onBack: () => void; coins?: number }) {
   return (
     <div className="flex items-center gap-3 mb-2">
       <button
         onClick={(e) => { e.stopPropagation(); onBack(); }}
+        aria-label="Back"
         className="w-9 h-9 rounded-full flex items-center justify-center text-white border border-white/10 bg-white/5 active:scale-95 transition"
       >
         ←
       </button>
       <h2 className="text-xl font-black text-white">{title}</h2>
-      <div className="ml-auto text-xs text-white/50">
-        ◎ <span className="text-white font-bold">0</span>
-      </div>
+      {typeof coins === "number" && (
+        <div className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs">
+          <span className="text-white/60">◎</span>
+          <span className="text-white font-bold tabular-nums">{coins}</span>
+        </div>
+      )}
     </div>
   );
 }
