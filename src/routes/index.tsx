@@ -1085,6 +1085,7 @@ function Game() {
             theme={theme}
             save={save}
             onSelect={selectTheme}
+            onBuy={buyTheme}
             onBack={() => setScreen("menu")}
           />
         )}
