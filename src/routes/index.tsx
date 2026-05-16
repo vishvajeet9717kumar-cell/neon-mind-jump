@@ -299,10 +299,13 @@ function setMusicEnabled(v: boolean) {
 
 /* ----------------------------- Game Constants ----------------------------- */
 
-const GATE_WIDTH = 70;
+const GATE_WIDTH = 88;
 const ANSWER_HEIGHT = 110;
-const GAP = 64;
+const GAP = 72;
 const BIRD_R = 12;
+const GRAVITY = 0.27;
+const FLAP_VY = -5.2;
+const MAX_VY = 8.4;
 
 interface Gate {
   x: number;
