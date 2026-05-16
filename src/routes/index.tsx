@@ -204,11 +204,11 @@ const ACHIEVEMENTS: { id: string; name: string; desc: string; check: (s: SaveDat
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let sfxGain: GainNode | null = null;
-let musicGain: GainNode | null = null;
-let musicNodes: { osc1: OscillatorNode; osc2: OscillatorNode; lfo: OscillatorNode; lfoGain: GainNode } | null = null;
 let sfxEnabled = true;
 let musicEnabled = true;
-let musicTargetVol = 0.06;
+let musicVolume = 0.5;
+let musicEl: HTMLAudioElement | null = null;
+let musicDuckTimer: number | null = null;
 
 function ensureAudio() {
   if (audioCtx) return audioCtx;
@@ -220,9 +220,6 @@ function ensureAudio() {
     sfxGain = audioCtx.createGain();
     sfxGain.gain.value = 1;
     sfxGain.connect(masterGain);
-    musicGain = audioCtx.createGain();
-    musicGain.gain.value = 0;
-    musicGain.connect(masterGain);
   } catch {}
   return audioCtx;
 }
@@ -252,53 +249,50 @@ function haptic(ms = 10) {
   try { (navigator as any).vibrate?.(ms); } catch {}
 }
 
+function ensureMusicEl() {
+  if (musicEl || typeof window === "undefined") return musicEl;
+  try {
+    const el = new Audio("/music/bg-music.mp3");
+    el.loop = true;
+    el.preload = "auto";
+    el.volume = 0;
+    musicEl = el;
+  } catch {}
+  return musicEl;
+}
+
 function startMusic() {
   if (!musicEnabled) return;
-  const ctx = ensureAudio();
-  if (!ctx || !musicGain || musicNodes) return;
-  if (ctx.state === "suspended") ctx.resume();
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  osc1.type = "sine"; osc2.type = "triangle";
-  osc1.frequency.value = 196; // G3
-  osc2.frequency.value = 261.63; // C4
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 0.18;
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 8;
-  lfo.connect(lfoGain);
-  lfoGain.connect(osc1.frequency);
-  lfoGain.connect(osc2.frequency);
-  osc1.connect(musicGain);
-  osc2.connect(musicGain);
-  osc1.start(); osc2.start(); lfo.start();
-  musicGain.gain.cancelScheduledValues(ctx.currentTime);
-  musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
-  musicGain.gain.linearRampToValueAtTime(musicTargetVol, ctx.currentTime + 1.2);
-  musicNodes = { osc1, osc2, lfo, lfoGain };
+  const el = ensureMusicEl();
+  if (!el) return;
+  el.volume = musicVolume;
+  const p = el.play();
+  if (p && typeof p.catch === "function") p.catch(() => {});
 }
 function stopMusic() {
-  if (!audioCtx || !musicGain || !musicNodes) return;
-  const t = audioCtx.currentTime;
-  musicGain.gain.cancelScheduledValues(t);
-  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(0.0001, t + 0.4);
-  const nodes = musicNodes;
-  musicNodes = null;
-  setTimeout(() => { try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.lfo.stop(); } catch {} }, 500);
+  if (!musicEl) return;
+  try { musicEl.pause(); } catch {}
 }
 function duckMusic(amount = 0.4, ms = 220) {
-  if (!audioCtx || !musicGain || !musicNodes) return;
-  const t = audioCtx.currentTime;
-  musicGain.gain.cancelScheduledValues(t);
-  musicGain.gain.setValueAtTime(musicGain.gain.value, t);
-  musicGain.gain.linearRampToValueAtTime(musicTargetVol * amount, t + 0.05);
-  musicGain.gain.linearRampToValueAtTime(musicTargetVol, t + ms / 1000);
+  if (!musicEl || musicEl.paused) return;
+  try {
+    musicEl.volume = Math.max(0, musicVolume * amount);
+    if (musicDuckTimer) window.clearTimeout(musicDuckTimer);
+    musicDuckTimer = window.setTimeout(() => {
+      if (musicEl) musicEl.volume = musicVolume;
+    }, ms);
+  } catch {}
 }
 function setSfxEnabled(v: boolean) { sfxEnabled = v; }
 function setMusicEnabled(v: boolean) {
   musicEnabled = v;
   if (!v) stopMusic();
+}
+function setMusicVolume(v: number) {
+  musicVolume = Math.max(0, Math.min(1, v));
+  if (musicEl && !musicEl.paused) {
+    try { musicEl.volume = musicVolume; } catch {}
+  }
 }
 
 /* ----------------------------- Game Constants ----------------------------- */
