@@ -137,6 +137,7 @@ type SaveData = {
   dailyChallenge: { date: string; mode: Mode; goal: number; progress: number; claimed: boolean };
   sfxOn: boolean;
   musicOn: boolean;
+  musicVolume: number;
   tutorialSeen: boolean;
 };
 
@@ -160,6 +161,7 @@ function defaultSave(): SaveData {
     dailyChallenge: { date: "", mode: "math", goal: 10, progress: 0, claimed: false },
     sfxOn: true,
     musicOn: true,
+    musicVolume: 0.5,
     tutorialSeen: false,
   };
 }
