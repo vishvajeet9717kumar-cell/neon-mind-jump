@@ -662,11 +662,22 @@ function Game() {
 
       // physics
       if (s.running) {
-        s.birdVy += 0.34;
-        if (s.birdVy > 9.5) s.birdVy = 9.5;
+        s.birdVy += GRAVITY;
+        if (s.birdVy > MAX_VY) s.birdVy = MAX_VY;
         s.birdY += s.birdVy;
         s.birdRot = Math.max(-0.6, Math.min(1.1, s.birdVy * 0.08));
-        s.gates.forEach((g) => (g.x -= s.speed));
+        // Slow-mo when bird is approaching the next gate (eases reading time)
+        const bxPhys = W * 0.28;
+        let slow = 1;
+        for (const g of s.gates) {
+          if (!g.passed && g.x + GATE_WIDTH > bxPhys - 6) {
+            const dx = g.x - bxPhys;
+            if (dx > 0 && dx < 130) { slow = 0.62 + (dx / 130) * 0.38; }
+            break;
+          }
+        }
+        const moveSpeed = s.speed * slow;
+        s.gates.forEach((g) => (g.x -= moveSpeed));
         if (s.gates.length && s.gates[0].x + GATE_WIDTH < -20) s.gates.shift();
         const last = s.gates[s.gates.length - 1];
         if (last && last.x < W - 280) spawnGate(W + 80);
