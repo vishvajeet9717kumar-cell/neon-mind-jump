@@ -1217,10 +1217,21 @@ function MenuScreen({
       {/* Header */}
       <div className="relative flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">
-            MindRush<span style={{ color: theme.primary }}> IQ</span>
+          <h1
+            className="text-3xl font-black tracking-tight leading-none"
+            style={{
+              background: `linear-gradient(135deg, #ffffff 0%, ${theme.primary} 55%, ${theme.glow} 100%)`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              textShadow: `0 0 24px ${theme.primary}55`,
+              filter: `drop-shadow(0 0 8px ${theme.glow}33)`,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            MindRush<span style={{ WebkitTextStroke: `1px ${theme.secondary}` }}> IQ</span>
           </h1>
-          <p className="text-xs text-white/40 mt-0.5">Train your brain. Beat your best.</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 mt-1 font-semibold">Train · React · Conquer</p>
         </div>
         <div className="flex items-center gap-1.5">
           <button
