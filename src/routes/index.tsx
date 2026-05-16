@@ -967,6 +967,10 @@ function Game() {
     const next = { ...save, musicOn: !save.musicOn };
     persistSave(next); setSave(next);
   };
+  const changeMusicVolume = (v: number) => {
+    const next = { ...save, musicVolume: v };
+    persistSave(next); setSave(next);
+  };
 
   const xpNeeded = xpForLevel(save.level);
   const xpPct = Math.min(100, (save.xp / xpNeeded) * 100);
@@ -1058,6 +1062,7 @@ function Game() {
             onOpenProgress={() => setScreen("progress")}
             onToggleSfx={toggleSfx}
             onToggleMusic={toggleMusic}
+            onChangeMusicVolume={changeMusicVolume}
           />
         )}
 
@@ -1242,8 +1247,9 @@ function GlassCard({
 function MenuScreen({
   theme, save, xpPct, xpNeeded, dailyClaimed, challengeReady,
   onStart, onClaimDaily, onClaimChallenge, onOpenThemes, onOpenMissions, onOpenProgress,
-  onToggleSfx, onToggleMusic,
+  onToggleSfx, onToggleMusic, onChangeMusicVolume,
 }: any) {
+  const [showVol, setShowVol] = useState(false);
   const particles = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({
       left: (i * 73 + 11) % 100,
