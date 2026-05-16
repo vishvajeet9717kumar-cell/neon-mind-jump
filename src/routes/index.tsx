@@ -160,6 +160,7 @@ function defaultSave(): SaveData {
     dailyChallenge: { date: "", mode: "math", goal: 10, progress: 0, claimed: false },
     sfxOn: true,
     musicOn: true,
+    tutorialSeen: false,
   };
 }
 
