@@ -1463,23 +1463,24 @@ function GameOverScreen({ theme, save, score, combo, mode, xpPct, xpNeeded, onRe
   );
 }
 
-function ThemesScreen({ theme, save, onSelect, onBack }: any) {
+function ThemesScreen({ theme, save, onSelect, onBuy, onBack }: any) {
   return (
     <div
       className="absolute inset-0 flex flex-col px-5 py-6 overflow-y-auto"
       style={{ background: `${theme.bgInner}f0`, animation: "scaleIn 250ms ease-out" }}
     >
-      <Header theme={theme} title="Themes" onBack={onBack} coins={save.coins} />
-      <div className="flex flex-col gap-2.5 mt-2">
+      <Header theme={theme} title="Themes & Shop" onBack={onBack} coins={save.coins} />
+      <p className="text-[11px] text-white/45 mb-3 px-1">Unlock by leveling up — or spend coins to skip the wait.</p>
+      <div className="flex flex-col gap-2.5">
         {THEMES.map(t => {
           const unlocked = save.unlockedThemes.includes(t.id);
           const active = save.themeId === t.id;
+          const cost = t.unlockLevel * 50;
+          const canBuy = !unlocked && save.coins >= cost;
           return (
-            <button
+            <div
               key={t.id}
-              disabled={!unlocked}
-              onClick={(e) => { e.stopPropagation(); onSelect(t.id); }}
-              className="rounded-2xl p-3 flex items-center gap-3 border transition active:scale-[0.98] disabled:opacity-50"
+              className="rounded-2xl p-3 flex items-center gap-3 border transition"
               style={{
                 background: `linear-gradient(135deg, ${t.bgInner}, ${t.bg})`,
                 borderColor: active ? t.primary : `${t.glow}33`,
@@ -1491,14 +1492,39 @@ function ThemesScreen({ theme, save, onSelect, onBack }: any) {
                 <div className="w-6 h-10 rounded" style={{ background: t.glow }} />
                 <div className="w-6 h-10 rounded" style={{ background: t.secondary }} />
               </div>
-              <div className="flex-1 text-left">
-                <div className="font-bold text-white">{t.name}</div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="font-bold text-white truncate">{t.name}</div>
                 <div className="text-[11px] text-white/50">
                   {unlocked ? (active ? "Active" : "Tap to apply") : `Unlocks at Lv ${t.unlockLevel}`}
                 </div>
               </div>
-              {active && <div className="text-xs font-black" style={{ color: t.primary }}>✓</div>}
-            </button>
+              {unlocked ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (!active) onSelect(t.id); }}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold border active:scale-95 transition"
+                  style={{
+                    background: active ? `${t.primary}22` : "rgba(255,255,255,0.05)",
+                    borderColor: active ? `${t.primary}88` : "rgba(255,255,255,0.1)",
+                    color: active ? t.primary : "#fff",
+                  }}
+                >
+                  {active ? "✓ Active" : "Apply"}
+                </button>
+              ) : (
+                <button
+                  disabled={!canBuy}
+                  onClick={(e) => { e.stopPropagation(); onBuy(t.id); }}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold border active:scale-95 transition disabled:opacity-45 disabled:cursor-not-allowed"
+                  style={{
+                    background: canBuy ? `${t.primary}1f` : "rgba(255,255,255,0.04)",
+                    borderColor: canBuy ? `${t.primary}66` : "rgba(255,255,255,0.1)",
+                    color: canBuy ? t.primary : "rgba(255,255,255,0.6)",
+                  }}
+                >
+                  ◎ {cost}
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
