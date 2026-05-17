@@ -782,9 +782,9 @@ function Game() {
         const topBoxBottom = g.gapY - GAP / 2;
         const bottomBoxTop = g.gapY + GAP / 2;
 
-        // Question label sits in a glass pill above the gap so it's never hidden behind the top HUD
+        // Question label sits in a glass pill centered in the gap, between the two answer boxes
         const qx = g.x + GATE_WIDTH / 2;
-        const qy = Math.max(116, g.gapY - GAP / 2 - 32);
+        const qy = g.gapY;
         ctx.font = "800 17px ui-sans-serif, system-ui";
         ctx.textAlign = "center";
         const qw = Math.max(ctx.measureText(g.question).width + 28, 72);
