@@ -3,6 +3,16 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 export const Route = createFileRoute("/")({
   component: Game,
+  head: () => ({
+    meta: [
+      { title: "MindRush IQ — Free Brain Training Arcade Game" },
+      { name: "description", content: "Play MindRush IQ free in your browser. A fast, addictive brain-training arcade with math, vocabulary, and pattern puzzles. Mobile-first, no sign-up." },
+      { property: "og:title", content: "MindRush IQ — Free Brain Training Arcade" },
+      { property: "og:description", content: "Sharpen focus, memory, and problem-solving with math, vocabulary, and pattern puzzles." },
+      { property: "og:url", content: "https://neon-mind-jump.lovable.app/" },
+    ],
+    links: [{ rel: "canonical", href: "https://neon-mind-jump.lovable.app/" }],
+  }),
 });
 
 type Mode = "math" | "vocab" | "pattern";
