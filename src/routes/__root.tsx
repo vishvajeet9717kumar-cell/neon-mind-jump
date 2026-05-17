@@ -95,7 +95,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "apple-touch-icon", href: "/favicon.svg" },
-      { rel: "canonical", href: "https://neon-mind-jump.lovable.app/" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "VideoGame",
+          name: "MindRush IQ",
+          description:
+            "A fast, modern brain-training arcade with math, vocabulary, and pattern puzzles. Play free in your browser.",
+          url: "https://neon-mind-jump.lovable.app/",
+          genre: ["Arcade", "Puzzle", "Brain Training", "Educational"],
+          applicationCategory: "Game",
+          operatingSystem: "Web Browser",
+          inLanguage: "en",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,

@@ -3,6 +3,16 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 export const Route = createFileRoute("/")({
   component: Game,
+  head: () => ({
+    meta: [
+      { title: "MindRush IQ — Free Brain Training Arcade Game" },
+      { name: "description", content: "Play MindRush IQ free in your browser. A fast, addictive brain-training arcade with math, vocabulary, and pattern puzzles. Mobile-first, no sign-up." },
+      { property: "og:title", content: "MindRush IQ — Free Brain Training Arcade" },
+      { property: "og:description", content: "Sharpen focus, memory, and problem-solving with math, vocabulary, and pattern puzzles." },
+      { property: "og:url", content: "https://neon-mind-jump.lovable.app/" },
+    ],
+    links: [{ rel: "canonical", href: "https://neon-mind-jump.lovable.app/" }],
+  }),
 });
 
 type Mode = "math" | "vocab" | "pattern";
@@ -1452,8 +1462,21 @@ function MenuScreen({
         <NavBtn theme={theme} label="Missions" onClick={onOpenMissions} />
         <NavBtn theme={theme} label="Stats" onClick={onOpenProgress} />
       </div>
-      <div className="mt-3 text-center text-[10px] text-white/35">
-        © {new Date().getFullYear()} MindRush IQ · Tap the <span className="text-white/60">i</span> for Privacy, Terms & Contact
+      <nav aria-label="Footer" className="mt-3 flex flex-wrap gap-x-3 gap-y-1 justify-center text-[10px] text-white/45">
+        <a href="/about" className="hover:text-emerald-300">About</a>
+        <span className="text-white/20">·</span>
+        <a href="/how-to-play" className="hover:text-emerald-300">How to Play</a>
+        <span className="text-white/20">·</span>
+        <a href="/faq" className="hover:text-emerald-300">FAQ</a>
+        <span className="text-white/20">·</span>
+        <a href="/contact" className="hover:text-emerald-300">Contact</a>
+        <span className="text-white/20">·</span>
+        <a href="/privacy" className="hover:text-emerald-300">Privacy</a>
+        <span className="text-white/20">·</span>
+        <a href="/terms" className="hover:text-emerald-300">Terms</a>
+      </nav>
+      <div className="mt-1 text-center text-[10px] text-white/30">
+        © {new Date().getFullYear()} MindRush IQ
       </div>
     </div>
   );
