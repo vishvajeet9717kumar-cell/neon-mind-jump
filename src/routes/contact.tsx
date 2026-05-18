@@ -28,10 +28,10 @@ function ContactPage() {
             For all inquiries — support, feedback, partnerships, or press — please reach us at:
           </p>
           <a
-            href="mailto:support@mindrushiq.app"
+            href="mailto:vishvajeet9717kumar@gmail.com"
             className="inline-block px-5 py-2.5 rounded-full bg-emerald-500 text-black font-semibold hover:bg-emerald-400 transition"
           >
-            support@mindrushiq.app
+            vishvajeet9717kumar@gmail.com
           </a>
           <p className="text-white/50 text-xs mt-3">Typical response time: 24–72 hours, Monday to Friday.</p>
         </div>
