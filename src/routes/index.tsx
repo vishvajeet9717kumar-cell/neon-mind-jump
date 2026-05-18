@@ -1800,11 +1800,18 @@ function drawAnswerBox(
   ctx.stroke();
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "800 22px ui-sans-serif, system-ui";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.shadowBlur = 8;
   ctx.shadowColor = "rgba(0,0,0,0.6)";
+  // Auto-fit font: shrink so long vocab/pattern answers stay inside the box
+  const maxTextW = w - 10;
+  let fontSize = 22;
+  ctx.font = `800 ${fontSize}px ui-sans-serif, system-ui`;
+  while (fontSize > 10 && ctx.measureText(label).width > maxTextW) {
+    fontSize -= 1;
+    ctx.font = `800 ${fontSize}px ui-sans-serif, system-ui`;
+  }
   ctx.fillText(label, x + w / 2, y + h / 2);
   ctx.shadowBlur = 0;
   ctx.textBaseline = "alphabetic";
