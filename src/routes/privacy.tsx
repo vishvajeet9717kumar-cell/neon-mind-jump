@@ -89,8 +89,8 @@ function PrivacyPage() {
         <h2 className="text-xl font-bold text-white mt-6">8. Contact</h2>
         <p>
           For privacy questions, email{" "}
-          <a href="mailto:support@mindrushiq.app" className="text-emerald-300 underline">
-            support@mindrushiq.app
+          <a href="mailto:vishvajeet9717kumar@gmail.com" className="text-emerald-300 underline">
+            vishvajeet9717kumar@gmail.com
           </a>
           .
         </p>
